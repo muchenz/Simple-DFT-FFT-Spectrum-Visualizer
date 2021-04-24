@@ -5,6 +5,10 @@
     <TargetFramework>net5.0-windows</TargetFramework>
     <RootNamespace>Wpf_FFT</RootNamespace>
     <UseWPF>true</UseWPF>
+    <Authors>Simple-DFT-FFT-Spectrum-Visualizer</Authors>
+    <Description>https://github.com/muchenz/Simple-DFT-FFT-Spectrum-Visualizer</Description>
+    <PackageId>Simple-DFT-FFT-Spectrum-Visualizer</PackageId>
+    <Product>Simple-DFT-FFT-Spectrum-Visualizer</Product>
   </PropertyGroup>
 
   <ItemGroup>
