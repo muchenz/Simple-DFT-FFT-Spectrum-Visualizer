@@ -107,7 +107,7 @@
                         </RadioButton>
                         <RadioButton Command="{Binding PhaseCommand}" GroupName="ChartGroup">
                             <Label Margin="0 -10 0 0" Content="Phase"/>
-                        </RadioButton>
+                        </RadioButton> 
                     </StackPanel>
                 </GroupBox>
             </StackPanel>
@@ -138,6 +138,14 @@
                     <StackPanel Orientation="Horizontal">
                         <Label Content="Impulse of sine: " Width="200" Style="{StaticResource ExampleLabelStyle}"></Label>
                         <Button Width="50" Command="{Binding ImpulseOfSine}" Style="{StaticResource ExampleButtonStyle}">Set</Button>
+                    </StackPanel> 
+                    <StackPanel Orientation="Horizontal">
+                        <Label Content="Sine plus noise: " Width="200" Style="{StaticResource ExampleLabelStyle}"></Label>
+                        <Button Width="50" Command="{Binding SinePlusNoise}" Style="{StaticResource ExampleButtonStyle}">Set</Button>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <Label Content="Tringle: " Width="200" Style="{StaticResource ExampleLabelStyle}"></Label>
+                        <Button Width="50" Command="{Binding Tringle}" Style="{StaticResource ExampleButtonStyle}">Set</Button>
                     </StackPanel>
                 </StackPanel>
             </GroupBox>

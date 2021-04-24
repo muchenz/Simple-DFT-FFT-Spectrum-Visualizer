@@ -332,7 +332,7 @@ namespace Wpf_FFT.MVVM
             if (IsFFT)
             {
                 FFT fft = new();
-                fft.Initialize(lengthSample, zeros, fullFrequencyData:IsShift);
+                fft.Initialize(lengthSample, zeros, fullFrequencyData: IsShift);
                 _cSpectrum = fft.Execute(windowedTimeSeries);
                 _cSpectrum = fft.ShiftData(_cSpectrum, IsShift);
 
@@ -345,7 +345,7 @@ namespace Wpf_FFT.MVVM
                 // Initialize the DFT
                 // You only need to do this once or if you change any of the DFT parameters.
 
-                dft.Initialize(lengthSample, zeros, fullFrequency:IsShift);
+                dft.Initialize(lengthSample, zeros, fullFrequency: IsShift);
                 // Call the DFT and get the scaled spectrum back
                 _cSpectrum = dft.Execute(windowedTimeSeries);
                 _cSpectrum = dft.ShiftData(_cSpectrum, IsShift);
@@ -363,7 +363,7 @@ namespace Wpf_FFT.MVVM
 
             double[] lmSpectrum = DSP.ConvertComplex.ToMagnitude(_cSpectrum);
             IsMagnitude = true;
-           // double[] lmSpectrum = _cSpectrum.ToList().Select(a => a.Magnitude).ToArray();
+            // double[] lmSpectrum = _cSpectrum.ToList().Select(a => a.Magnitude).ToArray();
 
             // At this point a XY Scatter plot can be generated from,
             // X axis => freqSpan
@@ -375,7 +375,7 @@ namespace Wpf_FFT.MVVM
             // XAxe = ChartHelper.GetXAxisLabelForFrequencyCart(freqSpan);
             SeriesFrequency = ChartHelper.GetSeriesFrequency(lmSpectrum, _freqSpan, IsShift);
 
-           // ((LineSeries<DataModel>)SeriesFrequency[0]).GeometryFill.StrokeThickness = 0.5f;
+            // ((LineSeries<DataModel>)SeriesFrequency[0]).GeometryFill.StrokeThickness = 0.5f;
 
 
             SeriesTime = ChartHelper.GetSeriesTime(windowedTimeSeries, samplingRate);
@@ -433,33 +433,57 @@ namespace Wpf_FFT.MVVM
             SamplingFrequency = "100000";
 
         });
+        public ICommand SinePlusNoise => new ActionCommand((o) =>
+        {
+            FunctionToFFT = "sin(2.0 * pi* time * frequency)+rUni(0,2)-rUni(0,2)";
+            Frequency = "2000";
+            Lenght = "2048";
+            ZerosNumber = "0";
+            SamplingFrequency = "100000";
+
+        });
+        public ICommand Tringle => new ActionCommand((o) =>
+          {
+              FunctionToFFT = " 2*(abs(mod(32*time* frequency%,1)-0.5)-0.25) ";
+              Frequency = "2000";
+              Lenght = "2048";
+              ZerosNumber = "0";
+              SamplingFrequency = "100000";
+
+          });
+
         public ICommand ShiftCommand => new ActionCommand((o) => { }, (o) => true);
-        public ICommand MagnitudeCommand => new ActionCommand((o) => {
+        public ICommand MagnitudeCommand => new ActionCommand((o) =>
+        {
             if (_cSpectrum == null) return;
-            
+
             double[] lmSpectrum = DSP.ConvertComplex.ToMagnitude(_cSpectrum);
             SeriesFrequency = ChartHelper.GetSeriesFrequency(lmSpectrum, _freqSpan, _oldShiftValue);
 
-        }, (o) =>  true );
-        public ICommand MagnitudeDBVCommand => new ActionCommand((o) => {
+        }, (o) => true);
+        public ICommand MagnitudeDBVCommand => new ActionCommand((o) =>
+        {
             if (_cSpectrum == null) return;
 
             double[] lmSpectrum = DSP.ConvertComplex.ToMagnitudeDBV(_cSpectrum);
             SeriesFrequency = ChartHelper.GetSeriesFrequency(lmSpectrum, _freqSpan, _oldShiftValue);
 
         }, (o) => true);
-        public ICommand ImaginaryCommand => new ActionCommand((o) => {
+        public ICommand ImaginaryCommand => new ActionCommand((o) =>
+        {
             if (_cSpectrum == null) return;
             double[] lmSpectrum = _cSpectrum.ToList().Select(a => a.Imaginary).ToArray();
             SeriesFrequency = ChartHelper.GetSeriesFrequency(lmSpectrum, _freqSpan, _oldShiftValue);
-        }, (o) =>  true );
-        public ICommand RealCommand => new ActionCommand((o) => {
+        }, (o) => true);
+        public ICommand RealCommand => new ActionCommand((o) =>
+        {
             if (_cSpectrum == null) return;
 
-            double[] lmSpectrum = _cSpectrum.ToList().Select(a=>a.Real).ToArray();
+            double[] lmSpectrum = _cSpectrum.ToList().Select(a => a.Real).ToArray();
             SeriesFrequency = ChartHelper.GetSeriesFrequency(lmSpectrum, _freqSpan, _oldShiftValue);
-        }, (o) =>  true );
-        public ICommand PhaseCommand => new ActionCommand((o) => {
+        }, (o) => true);
+        public ICommand PhaseCommand => new ActionCommand((o) =>
+        {
             if (_cSpectrum == null) return;
 
             double[] lmSpectrum = _cSpectrum.ToList().Select(a => a.Phase).ToArray();
