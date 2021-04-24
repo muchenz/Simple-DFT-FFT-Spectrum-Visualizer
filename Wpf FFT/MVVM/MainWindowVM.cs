@@ -40,6 +40,7 @@ namespace Wpf_FFT.MVVM
         {
             LiveCharts.Configure(a => a.HasMap<DataModel>((b, c) => { c.PrimaryValue = (float)b.Value; c.SecondaryValue = b.Second; }));
             _dialogService = dialogService;
+            Compute.Execute(null);
         }
         public MainWindowVM()
         {
@@ -54,7 +55,7 @@ namespace Wpf_FFT.MVVM
 
 
         private string _functionToFFT2 = "if( sin(2.0 * pi * time * frequency)>0 , 1, -1)";
-        private string _functionToFFT = "sin(2.0 * pi* time * frequency)*e^(time*100)";
+        private string _functionToFFT = "sin(2.0 * pi* t* f)*e^(t*100)";
 
         public string FunctionToFFT
         {
@@ -155,8 +156,8 @@ namespace Wpf_FFT.MVVM
 
                 if (columnName == nameof(FunctionToFFT))
                 {
-                    org.mariuszgromada.math.mxparser.Argument pierwszy = new("time", 1);
-                    org.mariuszgromada.math.mxparser.Argument drugi = new("frequency", 2);
+                    org.mariuszgromada.math.mxparser.Argument pierwszy = new("t", 1);
+                    org.mariuszgromada.math.mxparser.Argument drugi = new("f", 2);
 
                     org.mariuszgromada.math.mxparser.Expression f = new(FunctionToFFT, pierwszy, drugi);
 
@@ -398,7 +399,7 @@ namespace Wpf_FFT.MVVM
 
         public ICommand AmplitudeModulation => new ActionCommand((o) =>
         {
-            FunctionToFFT = "(1 + 0.3 * sin(2 * 4*pi *  time*frequency)) * sin(2 * pi * 40 * time*frequency)";
+            FunctionToFFT = "(1 + 0.3 * sin(2 * 4*pi *  t*f)) * sin(2 * pi * 40 * t*f)";
             Frequency = "500";
             Lenght = "2048";
             ZerosNumber = "0";
@@ -408,7 +409,7 @@ namespace Wpf_FFT.MVVM
 
         public ICommand SquareWave => new ActionCommand((o) =>
         {
-            FunctionToFFT = "if( sin(2.0 * pi * time * frequency)>0 , 1, -1)";
+            FunctionToFFT = "if( sin(2.0 * pi * t * f)>0 , 1, -1)";
             Frequency = "2000";
             Lenght = "2048";
             ZerosNumber = "0";
@@ -416,7 +417,7 @@ namespace Wpf_FFT.MVVM
 
         }); public ICommand Impulse => new ActionCommand((o) =>
         {
-            FunctionToFFT = "if(time>0.004&&time<0.0045, 1, 0)";
+            FunctionToFFT = "if(t>0.004&&t<0.0045, 1, 0)";
             Frequency = "2000";
             Lenght = "2048";
             ZerosNumber = "0";
@@ -426,7 +427,7 @@ namespace Wpf_FFT.MVVM
 
         public ICommand ImpulseOfSine => new ActionCommand((o) =>
         {
-            FunctionToFFT = "if (time > 0.004 && time < 0.0055, sin(2.0 * pi * time * frequency), 0)";
+            FunctionToFFT = "if (t > 0.004 && t < 0.0055, sin(2.0 * pi * t * f), 0)";
             Frequency = "2000";
             Lenght = "2048";
             ZerosNumber = "0";
@@ -435,7 +436,7 @@ namespace Wpf_FFT.MVVM
         });
         public ICommand SinePlusNoise => new ActionCommand((o) =>
         {
-            FunctionToFFT = "sin(2.0 * pi* time * frequency)+rUni(0,2)-rUni(0,2)";
+            FunctionToFFT = "sin(2.0 * pi* t * f)+rUni(0,2)-rUni(0,2)";
             Frequency = "2000";
             Lenght = "2048";
             ZerosNumber = "0";
@@ -444,7 +445,7 @@ namespace Wpf_FFT.MVVM
         });
         public ICommand Tringle => new ActionCommand((o) =>
           {
-              FunctionToFFT = " 2*(abs(mod(32*time* frequency%,1)-0.5)-0.25) ";
+              FunctionToFFT = "  8*(abs(mod(512*t,1)-0.5)-0.25)  ";
               Frequency = "2000";
               Lenght = "2048";
               ZerosNumber = "0";

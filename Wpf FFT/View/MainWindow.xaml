@@ -41,7 +41,7 @@
 
         </Grid>
 
-        <StackPanel  Margin="0 50 0 0" Orientation="Vertical" ScrollViewer.VerticalScrollBarVisibility="Visible" VerticalAlignment="Stretch">
+        <StackPanel  Margin="0 20 0 0" Orientation="Vertical" ScrollViewer.VerticalScrollBarVisibility="Visible" VerticalAlignment="Stretch">
             <GroupBox>
                 <GroupBox.Header>
                     <TextBlock FontSize="12">Settings</TextBlock>
@@ -71,7 +71,7 @@
                     </StackPanel>
                 </StackPanel>
             </GroupBox>
-            <StackPanel Orientation="Horizontal" Margin="0 20 0 0">
+            <StackPanel Orientation="Horizontal" Margin="0 10 0 0">
                 <GroupBox>
                     <GroupBox.Header>
                             <TextBlock FontSize="12">Compute</TextBlock>
@@ -111,14 +111,21 @@
                     </StackPanel>
                 </GroupBox>
             </StackPanel>
-            
-            <StackPanel Margin="0 30 0 30">
-                <TextBox Height="75" Margin="5" TextWrapping="Wrap" Text="{Binding FunctionToFFT, Mode=TwoWay, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}"></TextBox>
-                <Button Margin="5" Command="{Binding Compute}" Width="100">Compute</Button>
-                <TextBlock Margin="5" Height="55" TextWrapping="Wrap" Foreground="Red" Text="{Binding ErrorMessage}" HorizontalAlignment="Center"/>
-            </StackPanel>
-
-            <GroupBox Margin="0 50 0 0">
+            <GroupBox Margin="0 20 0 20" >
+                <GroupBox.Header>
+                    <TextBlock FontSize="12">Function </TextBlock>
+                </GroupBox.Header>
+                <StackPanel Margin="0 0 0 5">
+                    <StackPanel Margin="0 0 5 0" Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Label  Padding="0" Content="t - time, " Style="{StaticResource ExampleLabelStyle}"></Label>
+                    <Label  Padding="0" Content="f - frequency"  Style="{StaticResource ExampleLabelStyle}"></Label>
+                    </StackPanel>
+                    <TextBox Height="100" Margin="0 5 0 5" TextWrapping="Wrap" Text="{Binding FunctionToFFT, Mode=TwoWay, ValidatesOnDataErrors=True, UpdateSourceTrigger=PropertyChanged}"></TextBox>
+                    <Button Margin="10" Command="{Binding Compute}" Width="100">Compute</Button>
+                    <TextBlock Margin="5" Height="55" TextWrapping="Wrap" Foreground="Red" Text="{Binding ErrorMessage}" HorizontalAlignment="Center"/>
+                </StackPanel>
+            </GroupBox>
+            <GroupBox Margin="0 0 0 0">
                 <GroupBox.Header>
                     <TextBlock FontSize="12">Example</TextBlock>
                 </GroupBox.Header>
