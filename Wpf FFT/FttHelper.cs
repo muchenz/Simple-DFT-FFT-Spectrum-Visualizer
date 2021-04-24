@@ -12,8 +12,8 @@ namespace Wpf_FFT
     {
         public static  void GetExpressionFromString(string FunctionToFFT, out Argument pierwszy, out Argument drugi, out org.mariuszgromada.math.mxparser.Expression f)
         {
-            pierwszy = new("time", 1);
-            drugi = new("frequency", 2);
+            pierwszy = new("t", 1);
+            drugi = new("f", 2);
             f = new(FunctionToFFT, pierwszy, drugi);
         }
 
