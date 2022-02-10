@@ -1,17 +1,17 @@
 ﻿// The MIT License(MIT)
-
+//
 // Copyright(c) 2021 Alberto Rodriguez Orozco & LiveCharts Contributors
-
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
-
+//
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
-
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -33,17 +33,18 @@ using System.Windows;
 
 namespace LiveChartsCore.SkiaSharpView.WPF
 {
+    /// <inheritdoc cref="ICartesianChartView{TDrawingContext}" />
     public class CartesianChart : Chart, ICartesianChartView<SkiaSharpDrawingContext>
     {
         #region fields
 
-        private readonly CollectionDeepObserver<ISeries> seriesObserver;
-        private readonly CollectionDeepObserver<IAxis> xObserver;
-        private readonly CollectionDeepObserver<IAxis> yObserver;
-        private readonly ActionThrottler panningThrottler;
-        private System.Windows.Point? previous;
-        private System.Windows.Point? current;
-        private bool isPanning = false;
+        private readonly CollectionDeepObserver<ISeries> _seriesObserver;
+        private readonly CollectionDeepObserver<IAxis> _xObserver;
+        private readonly CollectionDeepObserver<IAxis> _yObserver;
+        private readonly ActionThrottler _panningThrottler;
+        private System.Windows.Point? _previous;
+        private System.Windows.Point? _current;
+        private bool _isPanning = false;
 
         #endregion
 
@@ -52,70 +53,100 @@ namespace LiveChartsCore.SkiaSharpView.WPF
             DefaultStyleKeyProperty.OverrideMetadata(typeof(CartesianChart), new FrameworkPropertyMetadata(typeof(CartesianChart)));
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CartesianChart"/> class.
+        /// </summary>
         public CartesianChart()
         {
-            seriesObserver = new CollectionDeepObserver<ISeries>(OnDeepCollectionChanged, OnDeepCollectionPropertyChanged, true);
-            xObserver = new CollectionDeepObserver<IAxis>(OnDeepCollectionChanged, OnDeepCollectionPropertyChanged, true);
-            yObserver = new CollectionDeepObserver<IAxis>(OnDeepCollectionChanged, OnDeepCollectionPropertyChanged, true);
+            _seriesObserver = new CollectionDeepObserver<ISeries>(OnDeepCollectionChanged, OnDeepCollectionPropertyChanged, true);
+            _xObserver = new CollectionDeepObserver<IAxis>(OnDeepCollectionChanged, OnDeepCollectionPropertyChanged, true);
+            _yObserver = new CollectionDeepObserver<IAxis>(OnDeepCollectionChanged, OnDeepCollectionPropertyChanged, true);
 
-            XAxes = new List<IAxis>() { new Axis() };
-            YAxes = new List<IAxis>() { new Axis() };
-            Series = new ObservableCollection<ISeries>();
+            SetCurrentValue(XAxesProperty, new List<IAxis>() { new Axis() });
+            SetCurrentValue(YAxesProperty, new List<IAxis>() { new Axis() });
+            SetCurrentValue(SeriesProperty, new ObservableCollection<ISeries>());
 
             MouseWheel += OnMouseWheel;
             MouseDown += OnMouseDown;
             MouseMove += OnMouseMove;
             MouseUp += OnMouseUp;
 
-            panningThrottler = new ActionThrottler(DoPan, TimeSpan.FromMilliseconds(30));
+            _panningThrottler = new ActionThrottler(DoPan, TimeSpan.FromMilliseconds(30));
         }
 
         #region dependency properties
 
+        /// <summary>
+        /// The series property
+        /// </summary>
         public static readonly DependencyProperty SeriesProperty =
             DependencyProperty.Register(
                 nameof(Series), typeof(IEnumerable<ISeries>), typeof(CartesianChart), new PropertyMetadata(null,
                     (DependencyObject o, DependencyPropertyChangedEventArgs args) =>
                     {
                         var chart = (CartesianChart)o;
-                        var seriesObserver = chart.seriesObserver;
+                        var seriesObserver = chart._seriesObserver;
                         seriesObserver.Dispose((IEnumerable<ISeries>)args.OldValue);
                         seriesObserver.Initialize((IEnumerable<ISeries>)args.NewValue);
                         if (chart.core == null) return;
                         Application.Current.Dispatcher.Invoke(() => chart.core.Update());
+                    },
+                    (DependencyObject o, object value) =>
+                    {
+                        return value is IEnumerable<ISeries> ? value : new ObservableCollection<ISeries>();
                     }));
 
+        /// <summary>
+        /// The x axes property
+        /// </summary>
         public static readonly DependencyProperty XAxesProperty =
             DependencyProperty.Register(
                 nameof(XAxes), typeof(IEnumerable<IAxis>), typeof(CartesianChart), new PropertyMetadata(null,
                     (DependencyObject o, DependencyPropertyChangedEventArgs args) =>
                     {
                         var chart = (CartesianChart)o;
-                        var observer = chart.xObserver;
+                        var observer = chart._xObserver;
                         observer.Dispose((IEnumerable<IAxis>)args.OldValue);
                         observer.Initialize((IEnumerable<IAxis>)args.NewValue);
                         if (chart.core == null) return;
                         Application.Current.Dispatcher.Invoke(() => chart.core.Update());
+                    },
+                    (DependencyObject o, object value) =>
+                    {
+                        return value is IEnumerable<IAxis> ? value : new List<IAxis>() { new Axis() };
                     }));
 
+        /// <summary>
+        /// The y axes property
+        /// </summary>
         public static readonly DependencyProperty YAxesProperty =
             DependencyProperty.Register(
                 nameof(YAxes), typeof(IEnumerable<IAxis>), typeof(CartesianChart), new PropertyMetadata(null,
                     (DependencyObject o, DependencyPropertyChangedEventArgs args) =>
                     {
                         var chart = (CartesianChart)o;
-                        var observer = chart.yObserver;
+                        var observer = chart._yObserver;
                         observer.Dispose((IEnumerable<IAxis>)args.OldValue);
                         observer.Initialize((IEnumerable<IAxis>)args.NewValue);
                         if (chart.core == null) return;
                         Application.Current.Dispatcher.Invoke(() => chart.core.Update());
+                    },
+                    (DependencyObject o, object value) =>
+                    {
+                        return value is IEnumerable<IAxis> ? value : new List<IAxis>() { new Axis() };
                     }));
 
+        /// <summary>
+        /// The zoom mode property
+        /// </summary>
         public static readonly DependencyProperty ZoomModeProperty =
             DependencyProperty.Register(
                 nameof(ZoomMode), typeof(ZoomAndPanMode), typeof(CartesianChart),
                 new PropertyMetadata(LiveCharts.CurrentSettings.DefaultZoomMode));
 
+        /// <summary>
+        /// The zooming speed property
+        /// </summary>
         public static readonly DependencyProperty ZoomingSpeedProperty =
             DependencyProperty.Register(
                 nameof(ZoomingSpeed), typeof(double), typeof(CartesianChart),
@@ -125,47 +156,59 @@ namespace LiveChartsCore.SkiaSharpView.WPF
 
         #region properties
 
-        CartesianChart<SkiaSharpDrawingContext> ICartesianChartView<SkiaSharpDrawingContext>.Core
-        {
-            get
-            {
-                if (core == null) throw new Exception("core not found");
-                return (CartesianChart<SkiaSharpDrawingContext>)core;
-            }
-        }
+        CartesianChart<SkiaSharpDrawingContext> ICartesianChartView<SkiaSharpDrawingContext>.Core =>
+            core == null ? throw new Exception("core not found") : (CartesianChart<SkiaSharpDrawingContext>)core;
 
+        /// <inheritdoc cref="ICartesianChartView{TDrawingContext}.Series" />
         public IEnumerable<ISeries> Series
         {
-            get { return (IEnumerable<ISeries>)GetValue(SeriesProperty); }
-            set { SetValue(SeriesProperty, value); }
+            get => (IEnumerable<ISeries>)GetValue(SeriesProperty);
+            set => SetValue(SeriesProperty, value);
         }
 
+        /// <inheritdoc cref="ICartesianChartView{TDrawingContext}.XAxes" />
         public IEnumerable<IAxis> XAxes
         {
-            get { return (IEnumerable<IAxis>)GetValue(XAxesProperty); }
-            set { SetValue(XAxesProperty, value); }
+            get => (IEnumerable<IAxis>)GetValue(XAxesProperty);
+            set => SetValue(XAxesProperty, value);
         }
 
+        /// <inheritdoc cref="ICartesianChartView{TDrawingContext}.YAxes" />
         public IEnumerable<IAxis> YAxes
         {
-            get { return (IEnumerable<IAxis>)GetValue(YAxesProperty); }
-            set { SetValue(YAxesProperty, value); }
+            get => (IEnumerable<IAxis>)GetValue(YAxesProperty);
+            set => SetValue(YAxesProperty, value);
         }
 
+        /// <inheritdoc cref="ICartesianChartView{TDrawingContext}.ZoomMode" />
         public ZoomAndPanMode ZoomMode
         {
-            get { return (ZoomAndPanMode)GetValue(ZoomModeProperty); }
-            set { SetValue(ZoomModeProperty, value); }
+            get => (ZoomAndPanMode)GetValue(ZoomModeProperty);
+            set => SetValue(ZoomModeProperty, value);
         }
 
+        ZoomAndPanMode ICartesianChartView<SkiaSharpDrawingContext>.ZoomMode
+        {
+            get => ZoomMode;
+            set => SetValueOrCurrentValue(ZoomModeProperty, value);
+        }
+
+        /// <inheritdoc cref="ICartesianChartView{TDrawingContext}.ZoomingSpeed" />
         public double ZoomingSpeed
         {
-            get { return (double)GetValue(ZoomingSpeedProperty); }
-            set { SetValue(ZoomingSpeedProperty, value); }
+            get => (double)GetValue(ZoomingSpeedProperty);
+            set => SetValue(ZoomingSpeedProperty, value);
+        }
+
+        double ICartesianChartView<SkiaSharpDrawingContext>.ZoomingSpeed
+        {
+            get => ZoomingSpeed;
+            set => SetValueOrCurrentValue(ZoomingSpeedProperty, value);
         }
 
         #endregion
 
+        /// <inheritdoc cref="ICartesianChartView{TDrawingContext}.ScaleUIPoint(PointF, int, int)" />
         public PointF ScaleUIPoint(PointF point, int xAxisIndex = 0, int yAxisIndex = 0)
         {
             if (core == null) throw new Exception("core not found");
@@ -173,6 +216,10 @@ namespace LiveChartsCore.SkiaSharpView.WPF
             return cartesianCore.ScaleUIPoint(point, xAxisIndex, yAxisIndex);
         }
 
+        /// <summary>
+        /// Initializes the core.
+        /// </summary>
+        /// <exception cref="Exception">canvas not found</exception>
         protected override void InitializeCore()
         {
             if (canvas == null) throw new Exception("canvas not found");
@@ -205,39 +252,39 @@ namespace LiveChartsCore.SkiaSharpView.WPF
 
         private void OnMouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-            isPanning = true;
-            previous = e.GetPosition(this);
-            CaptureMouse();
+            _isPanning = true;
+            _previous = e.GetPosition(this);
+            _ = CaptureMouse();
         }
 
         private void OnMouseMove(object sender, System.Windows.Input.MouseEventArgs e)
         {
-            if (!isPanning || previous == null) return;
+            if (!_isPanning || _previous == null) return;
 
-            current = e.GetPosition(this);
-            panningThrottler.Call();
+            _current = e.GetPosition(this);
+            _panningThrottler.Call();
         }
 
         private void DoPan()
         {
             if (core == null) throw new Exception("core not found");
-            if (previous == null || current == null) return;
+            if (_previous == null || _current == null) return;
 
             var c = (CartesianChart<SkiaSharpDrawingContext>)core;
 
             c.Pan(
                 new PointF(
-                (float)(current.Value.X - previous.Value.X),
-                (float)(current.Value.Y - previous.Value.Y)));
+                (float)(_current.Value.X - _previous.Value.X),
+                (float)(_current.Value.Y - _previous.Value.Y)));
 
-            previous = new System.Windows.Point(current.Value.X, current.Value.Y);
+            _previous = new System.Windows.Point(_current.Value.X, _current.Value.Y);
         }
 
         private void OnMouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-            if (!isPanning) return;
-            isPanning = false;
-            previous = null;
+            if (!_isPanning) return;
+            _isPanning = false;
+            _previous = null;
             ReleaseMouseCapture();
         }
     }

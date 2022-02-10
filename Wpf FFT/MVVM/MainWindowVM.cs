@@ -137,7 +137,11 @@ namespace Wpf_FFT.MVVM
             }
         }
 
-        public List<Axis> _xAxe = (new List<Axis> { new Axis { } });
+        public List<Axis> _xAxe = (new List<Axis> { new Axis {
+         SeparatorsBrush = new SolidColorPaintTask { Color = new SKColor(245,245,245),
+             StrokeThickness = 1 },
+
+        } });
         public List<Axis> XAxe
         {
             get { return _xAxe; }
@@ -147,6 +151,12 @@ namespace Wpf_FFT.MVVM
                 NotifyPropertyChanged();
             }
         }
+
+        public List<Axis> XAxe2 => new List<Axis> { new Axis {
+         SeparatorsBrush = new SolidColorPaintTask { Color = new SKColor(245,245,245),
+             StrokeThickness = 1 },
+          } };
+
         public string Error => throw new NotImplementedException();
 
         public string this[string columnName]
@@ -444,14 +454,24 @@ namespace Wpf_FFT.MVVM
 
         });
         public ICommand Tringle => new ActionCommand((o) =>
-          {
-              FunctionToFFT = "  8*(abs(mod(512*t,1)-0.5)-0.25)  ";
-              Frequency = "2000";
-              Lenght = "2048";
-              ZerosNumber = "0";
-              SamplingFrequency = "100000";
+        {
+            FunctionToFFT = "  8*(abs(mod(512*t,1)-0.5)-0.25)  ";
+            Frequency = "2000";
+            Lenght = "2048";
+            ZerosNumber = "0";
+            SamplingFrequency = "100000";
 
-          });
+        });
+
+        public ICommand FrequerencyModulation => new ActionCommand((o) =>
+        {
+            FunctionToFFT = "sin(2.0 * pi* t* f*sin(2.0 * pi* t* f/20))";
+            Frequency = "2000";
+            Lenght = "2048";
+            ZerosNumber = "0";
+            SamplingFrequency = "100000";
+
+        });
 
         public ICommand ShiftCommand => new ActionCommand((o) => { }, (o) => true);
         public ICommand MagnitudeCommand => new ActionCommand((o) =>
@@ -489,6 +509,17 @@ namespace Wpf_FFT.MVVM
 
             double[] lmSpectrum = _cSpectrum.ToList().Select(a => a.Phase).ToArray();
             SeriesFrequency = ChartHelper.GetSeriesFrequency(lmSpectrum, _freqSpan, _oldShiftValue);
+        }, (o) => true);
+
+        public ICommand AboutCommand => new ActionCommand((o) =>
+        {
+            _dialogService.ShowDialog<AboutWindowVM>();
+
+        }, (o) => true);
+
+        public ICommand ExitCommand => new ActionCommand((o) =>
+        {
+            
         }, (o) => true);
 
     }

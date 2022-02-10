@@ -1,17 +1,17 @@
 ﻿// The MIT License(MIT)
-
+//
 // Copyright(c) 2021 Alberto Rodriguez Orozco & LiveCharts Contributors
-
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
-
+//
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
-
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -27,12 +27,12 @@ using LiveChartsCore.Measure;
 using System.Collections.Generic;
 using LiveChartsCore.Drawing.Common;
 
-namespace LiveChartsCore
+namespace LiveChartsCore.Kernel
 {
     /// <summary>
     /// Defines an Axis in a Cartesian chart.
     /// </summary>
-    public interface IAxis: IDisposable
+    public interface IAxis : IDisposable
     {
         /// <summary>
         /// Gets the previous data bounds.
@@ -40,7 +40,15 @@ namespace LiveChartsCore
         /// <value>
         /// The previous data bounds.
         /// </value>
-        Bounds? PreviousDataBounds { get; }
+        Bounds? PreviousDataBounds { get; set; }
+
+        /// <summary>
+        /// Gets the previous data bounds.
+        /// </summary>
+        /// <value>
+        /// The previous data bounds.
+        /// </value>
+        Bounds? PreviousVisibleDataBounds { get; set; }
 
         /// <summary>
         /// Gets the data bounds, the min and max values in the axis.
@@ -115,7 +123,7 @@ namespace LiveChartsCore
         /// <value>
         /// The unit with.
         /// </value>
-        double UnitWith { get; set; }
+        double UnitWidth { get; set; }
 
         /// <summary>
         /// Gets or sets the minimum value visible in the axis, any point less than this value will be hidden, 
@@ -134,6 +142,30 @@ namespace LiveChartsCore
         /// The maximum value.
         /// </value>
         double? MaxLimit { get; set; }
+
+        /// <summary>
+        /// Gets or sets the previous maximum limit.
+        /// </summary>
+        /// <value>
+        /// The previous maximum limit.
+        /// </value>
+        double? PreviousMaxLimit { get; set; }
+
+        /// <summary>
+        /// Gets or sets the previous minimum limit.
+        /// </summary>
+        /// <value>
+        /// The previous minimum limit.
+        /// </value>
+        double? PreviousMinLimit { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this instance is visible.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this instance is visible; otherwise, <c>false</c>.
+        /// </value>
+        bool IsVisible { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether the axis is inverted based on the Cartesian coordinate system.
@@ -195,6 +227,11 @@ namespace LiveChartsCore
         void Initialize(AxisOrientation orientation);
     }
 
+    /// <summary>
+    /// Defines an Axis in a Cartesian chart.
+    /// </summary>
+    /// <typeparam name="TDrawingContext">The type of the drawing context.</typeparam>
+    /// <seealso cref="IDisposable" />
     public interface IAxis<TDrawingContext> : IAxis
         where TDrawingContext : DrawingContext
     {

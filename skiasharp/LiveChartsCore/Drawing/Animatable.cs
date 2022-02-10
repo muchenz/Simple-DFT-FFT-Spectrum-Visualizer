@@ -1,17 +1,17 @@
 ﻿// The MIT License(MIT)
-
+//
 // Copyright(c) 2021 Alberto Rodriguez Orozco & LiveCharts Contributors
-
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
-
+//
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
-
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -27,43 +27,67 @@ using System.Linq;
 
 namespace LiveChartsCore.Drawing.Common
 {
+    /// <inheritdoc cref="IAnimatable" />
     public abstract class Animatable : IAnimatable
     {
-        protected Dictionary<string, IMotionProperty> transitionProperties = new Dictionary<string, IMotionProperty>();
-        internal long currentTime = long.MinValue;
-        internal bool isCompleted = true;
-        internal bool removeOnCompleted;
-
-        public Animatable()
-        {
-        }
-
-        bool IAnimatable.IsCompleted { get => isCompleted; set => isCompleted = value; }
-        long IAnimatable.CurrentTime { get => currentTime; set => currentTime = value; }
+        /// <summary>
+        /// The transition properties
+        /// </summary>
+        protected Dictionary<string, IMotionProperty> transitionProperties = new();
+        internal long _currentTime = long.MinValue;
+        internal bool _isCompleted = true;
+        internal bool _removeOnCompleted;
 
         /// <summary>
-        /// if true, the element will be removed from the UI the next time <see cref="TransitionCompleted"/> event occurs.
+        /// Initializes a new instance of the <see cref="Animatable"/> class.
         /// </summary>
-        public bool RemoveOnCompleted { get => removeOnCompleted; set => removeOnCompleted = value; }
+        public Animatable() { }
 
-        public void SetPropertiesTransitions(Animation animation, params string[] properties)
+        /// <inheritdoc cref="IAnimatable.IsCompleted" />
+        bool IAnimatable.IsCompleted { get => _isCompleted; set => _isCompleted = value; }
+
+        /// <inheritdoc cref="IAnimatable.CurrentTime" />
+        long IAnimatable.CurrentTime { get => _currentTime; set => _currentTime = value; }
+
+        /// <inheritdoc cref="IAnimatable.RemoveOnCompleted" />
+        public bool RemoveOnCompleted { get => _removeOnCompleted; set => _removeOnCompleted = value; }
+
+        /// <inheritdoc cref="SetPropertiesTransitions(Animation, string[])" />
+        public void SetPropertiesTransitions(Animation? animation, params string[] properties)
         {
+            var a = animation?.Duration == 0 ? null : animation;
+
             foreach (var name in properties)
             {
-                transitionProperties[name].Animation = animation;
+                transitionProperties[name].Animation = a;
             }
         }
 
+        /// <inheritdoc cref="IAnimatable.RemovePropertyTransition(string)" />
         public void RemovePropertyTransition(string propertyName)
         {
             transitionProperties[propertyName].Animation = null;
         }
 
-        public void Invalidate()
+        /// <inheritdoc cref="IAnimatable.RemoveTransitions" />
+        public void RemoveTransitions()
         {
-            isCompleted = false;
+            foreach (var property in transitionProperties)
+            {
+                property.Value.Animation = null;
+            }
         }
 
+        /// <summary>
+        /// Invalidates this animatable.
+        /// </summary>
+        /// <returns></returns>
+        public void Invalidate()
+        {
+            _isCompleted = false;
+        }
+
+        /// <inheritdoc cref="IAnimatable.CompleteTransitions(string[])" />
         public void CompleteTransitions(params string[] propertyNames)
         {
             if (propertyNames == null || propertyNames.Length == 0)
@@ -81,20 +105,27 @@ namespace LiveChartsCore.Drawing.Common
             }
         }
 
+        /// <inheritdoc cref="IAnimatable.CompleteAllTransitions" />
         public void CompleteAllTransitions()
         {
             CompleteTransitions(transitionProperties.Keys.ToArray());
         }
 
+        /// <inheritdoc cref="IAnimatable.GetTransitionProperty(string)" />
         public IMotionProperty GetTransitionProperty(string propertyName)
         {
-            if (!transitionProperties.TryGetValue(propertyName, out var transitionProperty))
-                throw new System.Exception(
-                    $"The property {propertyName} is not a transition property of this instance.");
-
-            return transitionProperty;
+            return !transitionProperties.TryGetValue(propertyName, out var transitionProperty)
+                ? throw new Exception(
+                    $"The property {propertyName} is not a transition property of this instance.")
+                : transitionProperty;
         }
 
+        /// <summary>
+        /// Registers a motion property.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="transition">The transition.</param>
+        /// <returns></returns>
         protected T RegisterMotionProperty<T>(T transition)
             where T : IMotionProperty
         {
@@ -102,14 +133,23 @@ namespace LiveChartsCore.Drawing.Common
             return transition;
         }
 
+        /// <summary>
+        /// Sets the current time.
+        /// </summary>
+        /// <param name="time">The time.</param>
+        /// <returns></returns>
         protected void SetCurrentTime(long time)
         {
-            currentTime = time;
+            _currentTime = time;
         }
 
+        /// <summary>
+        /// Gets the current time.
+        /// </summary>
+        /// <returns></returns>
         protected long GetCurrentTime()
         {
-            return currentTime;
+            return _currentTime;
         }
     }
 }

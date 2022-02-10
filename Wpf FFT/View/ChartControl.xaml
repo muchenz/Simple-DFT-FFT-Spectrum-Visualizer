@@ -15,7 +15,7 @@
         
         <lvc:CartesianChart  Height="auto" Width="auto" x:Name="CartesianChart" VerticalAlignment="Stretch" HorizontalAlignment="Stretch"
                                 Series="{Binding Path=Series , Mode=TwoWay, ElementName=Control}" ZoomMode="X"
-                                XAxes="{Binding XAxe, ElementName=Control}"  >
+                                XAxes="{Binding XAxe, ElementName=Control}" >
 
 
             <lvc:CartesianChart.TooltipTemplate>

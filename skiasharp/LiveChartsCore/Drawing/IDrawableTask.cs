@@ -1,17 +1,17 @@
 ﻿// The MIT License(MIT)
-
+//
 // Copyright(c) 2021 Alberto Rodriguez Orozco & LiveCharts Contributors
-
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
-
+//
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
-
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -30,7 +30,6 @@ namespace LiveChartsCore.Drawing
     /// Defines a set of geometries that will be drawn according to this instance specifications.
     /// </summary>
     /// <typeparam name="TDrawingContext">The type of the drawing context.</typeparam>
-    /// <seealso cref="LiveChartsCore.Drawing.IDrawable" />
     public interface IDrawableTask<TDrawingContext> : IAnimatable, IDisposable
         where TDrawingContext : DrawingContext
     {
@@ -65,6 +64,14 @@ namespace LiveChartsCore.Drawing
         /// The stroke thickness.
         /// </value>
         float StrokeThickness { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this instance is paused.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this instance is paused; otherwise, <c>false</c>.
+        /// </value>
+        bool IsPaused { get; set; }
 
         /// <summary>
         /// Gets or sets the clip rectangle.
@@ -103,6 +110,20 @@ namespace LiveChartsCore.Drawing
         /// </summary>
         /// <param name="geometry">The geometry.</param>
         void RemoveGeometryFromPainTask(IDrawable<TDrawingContext> geometry);
+
+        /// <summary>
+        /// Sets the opacity according to the given geometry.
+        /// </summary>
+        /// <param name="context">The context.</param>
+        /// <param name="geometry">The geometry.</param>
+        void SetOpacity(TDrawingContext context, IGeometry<TDrawingContext> geometry);
+
+        /// <summary>
+        /// Resets the opacity.
+        /// </summary>
+        /// <param name="context">The context.</param>
+        /// <param name="geometry">The geometry.</param>
+        void ResetOpacity(TDrawingContext context, IGeometry<TDrawingContext> geometry);
 
         /// <summary>
         /// Clones the task.

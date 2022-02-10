@@ -9,7 +9,7 @@
         xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
         xmlns:ctx="clr-namespace:LiveChartsCore.Kernel;assembly=LiveChartsCore"
         mc:Ignorable="d"
-        Title="Simple DFT/FFT Spectrum Visualizer" Height="auto" Width="auto" FontSize="18"
+        Title="Simple DFT/FFT Spectrum Visualizer" Height="auto" Width="auto" WindowState="Maximized" FontSize="18"
         d:DataContext="{d:DesignInstance Type=vm:MainWindowVM, IsDesignTimeCreatable=True}">
     <Window.Resources>
         <Style TargetType="Label" x:Key="ExampleLabelStyle">
@@ -21,7 +21,7 @@
             <Setter Property="Height" Value="23"/>
         </Style>
     </Window.Resources>
-    <Grid>
+    <Grid>      
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="350"/>
             <ColumnDefinition Width="*"/>
@@ -33,14 +33,24 @@
             </Grid.RowDefinitions>
 
             <local:ChartControl Series="{Binding Path=SeriesTime , Mode=TwoWay}"
-                                   XTipName="Time: " />
+                                   XAxe="{Binding Path=XAxe2}" XTipName="Time: " />
 
 
             <local:ChartControl Grid.Row="1" Series="{Binding Path=SeriesFrequency , Mode=TwoWay}"
                                    XAxe="{Binding Path=XAxe}" XTipName="Freq: " />
 
         </Grid>
+        <StackPanel VerticalAlignment="Top">
+            <Menu Width="Auto" Height="20">
+                <MenuItem Header="_File">
+                    <MenuItem x:Name="AppExit" Header="E_xit" HorizontalAlignment="Left" Width="140"/>
+                </MenuItem>
 
+                <MenuItem Header="_Help">
+                    <MenuItem x:Name="About" Header="About" HorizontalAlignment="Left" Width="140"  Command="{Binding AboutCommand}"/>
+                </MenuItem>
+            </Menu>
+        </StackPanel>
         <StackPanel  Margin="0 20 0 0" Orientation="Vertical" ScrollViewer.VerticalScrollBarVisibility="Visible" VerticalAlignment="Stretch">
             <GroupBox>
                 <GroupBox.Header>
@@ -153,6 +163,10 @@
                     <StackPanel Orientation="Horizontal">
                         <Label Content="Tringle: " Width="200" Style="{StaticResource ExampleLabelStyle}"></Label>
                         <Button Width="50" Command="{Binding Tringle}" Style="{StaticResource ExampleButtonStyle}">Set</Button>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <Label Content="Frequerency Modulation: " Width="200" Style="{StaticResource ExampleLabelStyle}"></Label>
+                        <Button Width="50" Command="{Binding FrequerencyModulation}" Style="{StaticResource ExampleButtonStyle}">Set</Button>
                     </StackPanel>
                 </StackPanel>
             </GroupBox>

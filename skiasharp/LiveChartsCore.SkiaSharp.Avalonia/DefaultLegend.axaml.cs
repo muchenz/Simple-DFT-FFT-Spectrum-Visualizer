@@ -1,17 +1,17 @@
 // The MIT License(MIT)
-
+//
 // Copyright(c) 2021 Alberto Rodriguez Orozco & LiveCharts Contributors
-
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
-
+//
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
-
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -33,42 +33,85 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace LiveChartsCore.SkiaSharp.Avalonia
+namespace LiveChartsCore.SkiaSharpView.Avalonia
 {
+    /// <summary>
+    /// Defines a default legend for a chart.
+    /// </summary>
     public class DefaultLegend : UserControl, IChartLegend<SkiaSharpDrawingContext>
     {
-        private readonly DataTemplate defaultTemplate;
+        private readonly DataTemplate _defaultTemplate;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DefaultLegend"/> class.
+        /// </summary>
+        /// <exception cref="Exception">default template not found</exception>
         public DefaultLegend()
         {
             InitializeComponent();
             var t = (DataTemplate?)Resources["defaultTemplate"];
-            if (t == null) throw new Exception("default tempalte not found");
-            defaultTemplate = t;
+            if (t == null) throw new Exception("default template not found");
+            _defaultTemplate = t;
         }
 
+        /// <summary>
+        /// The orientation property
+        /// </summary>
         public static readonly AvaloniaProperty<Orientation> OrientationProperty =
            AvaloniaProperty.Register<CartesianChart, Orientation>(nameof(Orientation), Orientation.Horizontal, inherits: true);
 
+        /// <summary>
+        /// The dock property
+        /// </summary>
         public static readonly AvaloniaProperty<Dock> DockProperty =
            AvaloniaProperty.Register<CartesianChart, Dock>(nameof(Dock), Dock.Left, inherits: true);
 
+        /// <summary>
+        /// Gets or sets the custom template.
+        /// </summary>
+        /// <value>
+        /// The custom template.
+        /// </value>
         public DataTemplate? CustomTemplate { get; set; } = null;
 
+        /// <summary>
+        /// Gets or sets the series.
+        /// </summary>
+        /// <value>
+        /// The series.
+        /// </value>
         public IEnumerable<ISeries> Series { get; set; } = Enumerable.Empty<ISeries>();
 
+        /// <summary>
+        /// Gets or sets the text brush.
+        /// </summary>
+        /// <value>
+        /// The text brush.
+        /// </value>
         public SolidColorBrush TextBrush { get; set; } = new SolidColorBrush(Color.FromRgb(35, 35, 35));
 
+        /// <summary>
+        /// Gets or sets the orientation.
+        /// </summary>
+        /// <value>
+        /// The orientation.
+        /// </value>
         public Orientation Orientation
         {
-            get { return (Orientation)GetValue(OrientationProperty); }
-            set { SetValue(OrientationProperty, value); }
+            get => (Orientation)GetValue(OrientationProperty);
+            set => SetValue(OrientationProperty, value);
         }
 
+        /// <summary>
+        /// Gets or sets the dock.
+        /// </summary>
+        /// <value>
+        /// The dock.
+        /// </value>
         public Dock Dock
         {
-            get { return (Dock)GetValue(DockProperty); }
-            set { SetValue(DockProperty, value); }
+            get => (Dock)GetValue(DockProperty);
+            set => SetValue(DockProperty, value);
         }
 
         void IChartLegend<SkiaSharpDrawingContext>.Draw(Chart<SkiaSharpDrawingContext> chart)
@@ -125,9 +168,12 @@ namespace LiveChartsCore.SkiaSharp.Avalonia
             Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
         }
 
+        /// <summary>
+        /// Builds the content.
+        /// </summary>
         protected void BuildContent()
         {
-            var template = CustomTemplate ?? defaultTemplate;
+            var template = CustomTemplate ?? _defaultTemplate;
             var model = new LegendBindingContext
             {
                 Series = Series,

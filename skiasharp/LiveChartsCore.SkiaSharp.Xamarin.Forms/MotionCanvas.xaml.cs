@@ -1,17 +1,17 @@
 ﻿// The MIT License(MIT)
-
+//
 // Copyright(c) 2021 Alberto Rodriguez Orozco & LiveCharts Contributors
-
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
-
+//
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
-
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -32,13 +32,18 @@ using Xamarin.Forms.Xaml;
 
 namespace LiveChartsCore.SkiaSharpView.Xamarin.Forms
 {
+    /// <summary>
+    /// The motion canvas control fro Xamarin, <see cref="MotionCanvas{TDrawingContext}"/>.
+    /// </summary>
     [XamlCompilation(XamlCompilationOptions.Compile)]
     public partial class MotionCanvas : ContentView
     {
         private bool isDrawingLoopRunning = false;
-        private readonly MotionCanvas<SkiaSharpDrawingContext> canvasCore = new();
         private double framesPerSecond = 90;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MotionCanvas"/> class.
+        /// </summary>
         public MotionCanvas()
         {
             InitializeComponent();
@@ -48,25 +53,56 @@ namespace LiveChartsCore.SkiaSharpView.Xamarin.Forms
                     $"If you override the template please add an {nameof(SKCanvasView)} to the template and name it 'skiaElement'");
 
             skiaElement.PaintSurface += OnCanvasViewPaintSurface;
-            canvasCore.Invalidated += OnCanvasCoreInvalidated;
+            CanvasCore.Invalidated += OnCanvasCoreInvalidated;
         }
 
+        /// <summary>
+        /// The paint tasks property
+        /// </summary>
         public static readonly BindableProperty PaintTasksProperty = BindableProperty.Create(
             nameof(PaintTasks), typeof(HashSet<IDrawableTask<SkiaSharpDrawingContext>>),
             typeof(MotionCanvas), propertyChanged: PaintTasksChanged);
 
+        /// <summary>
+        /// Gets the sk canvas view.
+        /// </summary>
+        /// <value>
+        /// The sk canvas view.
+        /// </value>
         public SKCanvasView SkCanvasView => skiaElement;
 
+        /// <summary>
+        /// Gets or sets the frames per second.
+        /// </summary>
+        /// <value>
+        /// The frames per second.
+        /// </value>
         public double FramesPerSecond { get => framesPerSecond; set => framesPerSecond = value; }
 
+        /// <summary>
+        /// Gets or sets the paint tasks.
+        /// </summary>
+        /// <value>
+        /// The paint tasks.
+        /// </value>
         public HashSet<IDrawableTask<SkiaSharpDrawingContext>> PaintTasks
         {
-            get { return (HashSet<IDrawableTask<SkiaSharpDrawingContext>>)GetValue(PaintTasksProperty); }
-            set { SetValue(PaintTasksProperty, value); }
+            get => (HashSet<IDrawableTask<SkiaSharpDrawingContext>>)GetValue(PaintTasksProperty);
+            set => SetValue(PaintTasksProperty, value);
         }
 
-        public MotionCanvas<SkiaSharpDrawingContext> CanvasCore => canvasCore;
+        /// <summary>
+        /// Gets the canvas core.
+        /// </summary>
+        /// <value>
+        /// The canvas core.
+        /// </value>
+        public MotionCanvas<SkiaSharpDrawingContext> CanvasCore { get; } = new();
 
+        /// <summary>
+        /// Invalidates this instance.
+        /// </summary>
+        /// <returns></returns>
         public void Invalidate()
         {
             MainThread.BeginInvokeOnMainThread(RunDrawingLoop);
@@ -74,7 +110,7 @@ namespace LiveChartsCore.SkiaSharpView.Xamarin.Forms
 
         void OnCanvasViewPaintSurface(object sender, SKPaintSurfaceEventArgs args)
         {
-            canvasCore.DrawFrame(new SkiaSharpDrawingContext(args.Info, args.Surface, args.Surface.Canvas));
+            CanvasCore.DrawFrame(new SkiaSharpDrawingContext(args.Info, args.Surface, args.Surface.Canvas));
         }
 
         private void OnCanvasCoreInvalidated(MotionCanvas<SkiaSharpDrawingContext> sender)
@@ -88,7 +124,7 @@ namespace LiveChartsCore.SkiaSharpView.Xamarin.Forms
             isDrawingLoopRunning = true;
 
             var ts = TimeSpan.FromSeconds(1 / framesPerSecond);
-            while (!canvasCore.IsValid)
+            while (!CanvasCore.IsValid)
             {
                 skiaElement.InvalidateSurface();
                 await Task.Delay(ts);
@@ -100,7 +136,7 @@ namespace LiveChartsCore.SkiaSharpView.Xamarin.Forms
         private static void PaintTasksChanged(BindableObject bindable, object oldValue, object newValue)
         {
             var control = (MotionCanvas)bindable;
-            control.canvasCore.SetPaintTasks(control.PaintTasks);
+            control.CanvasCore.SetPaintTasks(control.PaintTasks);
         }
     }
 }

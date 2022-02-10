@@ -9,7 +9,14 @@
     <Description>https://github.com/muchenz/Simple-DFT-FFT-Spectrum-Visualizer</Description>
     <PackageId>Simple-DFT-FFT-Spectrum-Visualizer</PackageId>
     <Product>Simple-DFT-FFT-Spectrum-Visualizer</Product>
+    <DebugType>none</DebugType>
+    <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
+    <ApplicationIcon>ikona FFT2.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="ikona FFT2.ico" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Unity.Container" Version="5.11.11" />

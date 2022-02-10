@@ -1,17 +1,17 @@
 ﻿// The MIT License(MIT)
-
+//
 // Copyright(c) 2021 Alberto Rodriguez Orozco & LiveCharts Contributors
-
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
-
+//
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
-
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -40,7 +40,7 @@ namespace LiveChartsCore
         int SeriesId { get; set; }
 
         /// <summary>
-        /// Gets or sets the state where the visual is moved to when the mouse moves over a <see cref="ChartVisualPoint{TModel, TVisual, TLabel, TDrawingContext}"/>.
+        /// Gets or sets the state where the visual is moved to when the mouse moves over a <see cref="ChartPoint"/>.
         /// </summary>
         string HoverState { get; set; }
 
@@ -64,7 +64,24 @@ namespace LiveChartsCore
         IEnumerable? Values { get; set; }
 
         /// <summary>
-        /// Gets or sets the index of the z.
+        /// Gets or sets a value indicating whether this instance is visible.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this instance is visible; otherwise, <c>false</c>.
+        /// </value>
+        bool IsVisible { get; set; }
+
+        /// <summary>
+        /// Gets or sets the data padding, both coordinates (X and Y) from 0 to 1, where 0 is nothing and 1 is the axis tick
+        /// (the separation between every label).
+        /// </summary>
+        /// <value>
+        /// The data padding.
+        /// </value>
+        PointF DataPadding { get; set; }
+
+        /// <summary>
+        /// Gets or sets the z index position.
         /// </summary>
         /// <value>
         /// The index of the z.
@@ -77,11 +94,11 @@ namespace LiveChartsCore
         double Pivot { get; set; }
 
         /// <summary>
-        /// Gets or sets the tooltip label formatter, this function will build the label when a point in this series 
-        /// is shown inside a tooltip.
+        /// Gets or sets the tool tip label formatter, this function will build the label when a point in this series 
+        /// is shown inside a tool tip.
         /// </summary>
         /// <value>
-        /// The tooltip label formatter.
+        /// The tool tip label formatter.
         /// </value>
         Func<ChartPoint, string> TooltipLabelFormatter { get; set; }
 
@@ -95,6 +112,11 @@ namespace LiveChartsCore
         Func<ChartPoint, string> DataLabelsFormatter { get; set; }
 
         /// <summary>
+        /// Occurs before the series is disposed.
+        /// </summary>
+        event Action<ISeries>? Disposing;
+
+        /// <summary>
         /// Gets a <see cref="ChartPoint"/> array with the points used to generate the plot.
         /// </summary>
         /// <param name="chart">the chart</param>
@@ -106,7 +128,7 @@ namespace LiveChartsCore
         /// to the chart's <see cref="TooltipFindingStrategy"/> property.
         /// </summary>
         /// <param name="chart">the chart</param>
-        /// <param name="pointerPosition">the poiinter position</param>
+        /// <param name="pointerPosition">the pointer position</param>
         /// <returns></returns>
         IEnumerable<TooltipPoint> FindPointsNearTo(IChart chart, PointF pointerPosition);
 
@@ -125,12 +147,22 @@ namespace LiveChartsCore
         void RemovePointFromState(ChartPoint chartPoint, string state);
 
         /// <summary>
+        /// Clears the visuals in the cache and re-starts animations.
+        /// </summary>
+        void RestartAnimations();
+
+        /// <summary>
         /// Deletes the series from the user interface.
         /// </summary>
         void Delete(IChartView chart);
     }
 
-    public interface ISeries<TModel>: ISeries
+    /// <summary>
+    /// Defines a series.
+    /// </summary>
+    /// <typeparam name="TModel">The type of the model.</typeparam>
+    /// <seealso cref="IDisposable" />
+    public interface ISeries<TModel> : ISeries
     {
         /// <summary>
         /// Gets or sets the mapping.
