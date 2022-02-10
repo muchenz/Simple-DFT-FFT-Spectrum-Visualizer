@@ -1,17 +1,17 @@
 ﻿// The MIT License(MIT)
-
+//
 // Copyright(c) 2021 Alberto Rodriguez Orozco & LiveCharts Contributors
-
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
-
+//
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
-
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -25,10 +25,25 @@ using System.Drawing;
 
 namespace LiveChartsCore.Kernel
 {
+    /// <summary>
+    /// Defines a hover area.
+    /// </summary>
     public abstract class HoverArea
     {
+        /// <summary>
+        /// Determines whether the area is trigger by the specified point in the user interface.
+        /// </summary>
+        /// <param name="point">The point.</param>
+        /// <param name="strategy">The strategy.</param>
+        /// <returns>
+        ///   <c>true</c> if [is trigger by] [the specified point]; otherwise, <c>false</c>.
+        /// </returns>
         public abstract bool IsTriggerBy(PointF point, TooltipFindingStrategy strategy);
 
+        /// <summary>
+        /// Suggests the tooltip placement.
+        /// </summary>
+        /// <param name="context">The context.</param>
         public abstract void SuggestTooltipPlacement(TooltipPlacementContext context);
     }
 }

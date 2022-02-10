@@ -1,17 +1,17 @@
 ﻿// The MIT License(MIT)
-
+//
 // Copyright(c) 2021 Alberto Rodriguez Orozco & LiveCharts Contributors
-
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
-
+//
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
-
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -36,6 +36,9 @@ namespace LiveChartsCore
         where TVisual : class, IDoughnutVisualChartPoint<TDrawingContext>, new()
         where TLabel : class, ILabelGeometry<TDrawingContext>, new()
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PieSeries{TModel, TVisual, TLabel, TDrawingContext}"/> class.
+        /// </summary>
         public PieSeries() : base(SeriesProperties.PieSeries | SeriesProperties.Stacked)
         {
             HoverState = LiveCharts.PieSeriesHoverKey;
@@ -147,7 +150,7 @@ namespace LiveChartsCore
                     OnPointCreated(point);
                     p.CompleteAllTransitions();
 
-                    everFetched.Add(point);
+                    _ = everFetched.Add(point);
                 }
 
                 if (Fill != null) Fill.AddGeometyToPaintTask(visual);
@@ -172,7 +175,7 @@ namespace LiveChartsCore
                 point.Context.HoverArea = new SemicircleHoverArea().SetDimensions(cx, cy, start, start + end, minDimension * 0.5f);
 
                 OnPointMeasured(point);
-                toDeletePoints.Remove(point);
+                _ = toDeletePoints.Remove(point);
             }
 
             var u = new Scaler();
@@ -180,49 +183,45 @@ namespace LiveChartsCore
             {
                 if (point.Context.Chart != chart.View) continue;
                 SoftDeletePoint(point, u, u);
-                everFetched.Remove(point);
+                _ = everFetched.Remove(point);
             }
         }
 
         /// <inheritdoc cref="IPieSeries{TDrawingContext}.GetBounds(PieChart{TDrawingContext})"/>
         public DimensionalBounds GetBounds(PieChart<TDrawingContext> chart)
         {
-            if (dataProvider == null) throw new Exception("Data provider not found");
-            return dataProvider.GetPieBounds(chart, this);
+            return dataProvider == null ? throw new Exception("Data provider not found") : dataProvider.GetPieBounds(chart, this);
         }
+
+        /// <summary>
+        /// Defines de default behaviour when a point is added to a state.
+        /// </summary>
+        /// <param name="visual">The visual.</param>
+        /// <param name="chart">The chart.</param>
         protected override void DefaultOnPointAddedToSate(TVisual visual, IChartView<TDrawingContext> chart)
         {
             visual.PushOut = (float)HoverPushout;
         }
 
+        /// <summary>
+        /// Defines the default behavior when a point is removed from a state.
+        /// </summary>
+        /// <param name="visual">The visual.</param>
+        /// <param name="chart">The chart.</param>
         protected override void DefaultOnRemovedFromState(TVisual visual, IChartView<TDrawingContext> chart)
         {
             visual.PushOut = (float)Pushout;
         }
 
+        /// <summary>
+        /// Called when the paint context changed.
+        /// </summary>
         protected override void OnPaintContextChanged()
         {
             var context = new PaintContext<TDrawingContext>();
 
-            if (Fill != null)
-            {
-                var fillClone = Fill.CloneTask();
-                var visual = new TVisual
-                {
-                    X = 0,
-                    Y = 0,
-                    Height = (float)LegendShapeSize,
-                    Width = (float)LegendShapeSize,
-                    CenterX = (float)LegendShapeSize * 0.5f,
-                    CenterY = (float)LegendShapeSize * 0.5f,
-                    StartAngle = 0,
-                    SweepAngle = 359.9999f
-                };
-                fillClone.AddGeometyToPaintTask(visual);
-                context.PaintTasks.Add(fillClone);
-            }
-
             var w = LegendShapeSize;
+            var sh = 0f;
             if (Stroke != null)
             {
                 var strokeClone = Stroke.CloneTask();
@@ -237,28 +236,60 @@ namespace LiveChartsCore
                     StartAngle = 0,
                     SweepAngle = 359.9999f
                 };
+                sh = strokeClone.StrokeThickness;
+                strokeClone.ZIndex = 1;
                 w += 2 * strokeClone.StrokeThickness;
                 strokeClone.AddGeometyToPaintTask(visual);
-                context.PaintTasks.Add(strokeClone);
+                _ = context.PaintTasks.Add(strokeClone);
+            }
+
+            if (Fill != null)
+            {
+                var fillClone = Fill.CloneTask();
+                var visual = new TVisual
+                {
+                    X = sh,
+                    Y = sh,
+                    Height = (float)LegendShapeSize,
+                    Width = (float)LegendShapeSize,
+                    CenterX = (float)LegendShapeSize * 0.5f,
+                    CenterY = (float)LegendShapeSize * 0.5f,
+                    StartAngle = 0,
+                    SweepAngle = 359.9999f
+                };
+                fillClone.AddGeometyToPaintTask(visual);
+                _ = context.PaintTasks.Add(fillClone);
             }
 
             context.Width = w;
             context.Height = w;
 
             paintContext = context;
+            OnPropertyChanged(nameof(DefaultPaintContext));
         }
 
-        // for now multiple stack levels at a pie chart is not supported.
-        public override int GetStackGroup() => 0;
+        /// <summary>
+        /// GEts the stack group
+        /// </summary>
+        /// <returns></returns>
+        /// <inheritdoc />
+        public override int GetStackGroup()
+        {
+            return 0;
+        }
 
+        /// <summary>
+        /// Sets the default point transitions.
+        /// </summary>
+        /// <param name="chartPoint">The chart point.</param>
+        /// <exception cref="Exception">Unable to initialize the point instance.</exception>
         protected override void SetDefaultPointTransitions(ChartPoint chartPoint)
         {
-            var visual = chartPoint.Context.Visual as TVisual;
             var chart = chartPoint.Context.Chart;
 
-            if (visual == null) throw new Exception("Unable to initialize the point instance.");
+            if (chartPoint.Context.Visual is not TVisual visual) throw new Exception("Unable to initialize the point instance.");
 
-            visual
+            _ = visual
                 .TransitionateProperties(
                     nameof(visual.CenterX),
                     nameof(visual.CenterY),
@@ -276,16 +307,27 @@ namespace LiveChartsCore
                         .WithEasingFunction(chart.EasingFunction));
         }
 
+        /// <summary>
+        /// Softs the delete point.
+        /// </summary>
+        /// <param name="point">The point.</param>
+        /// <param name="primaryScale">The primary scale.</param>
+        /// <param name="secondaryScale">The secondary scale.</param>
         protected override void SoftDeletePoint(ChartPoint point, Scaler primaryScale, Scaler secondaryScale)
         {
             var visual = (TVisual?)point.Context.Visual;
             if (visual == null) return;
 
-            visual.StartAngle = visual.StartAngle + visual.SweepAngle;
+            visual.StartAngle += visual.SweepAngle;
             visual.SweepAngle = 0;
             visual.RemoveOnCompleted = true;
         }
 
+        /// <summary>
+        /// Deletes the point from the chart.
+        /// </summary>
+        /// <param name="chart"></param>
+        /// <inheritdoc cref="M:LiveChartsCore.ISeries.Delete(LiveChartsCore.Kernel.IChartView)" />
         public override void Delete(IChartView chart)
         {
             var u = new Scaler();
@@ -298,7 +340,7 @@ namespace LiveChartsCore
                 toDelete.Add(point);
             }
 
-            foreach (var item in toDelete) everFetched.Remove(item);
+            foreach (var item in toDelete) _ = everFetched.Remove(item);
         }
     }
 }

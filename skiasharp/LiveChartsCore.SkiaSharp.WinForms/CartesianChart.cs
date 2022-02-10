@@ -1,17 +1,17 @@
 ﻿// The MIT License(MIT)
-
+//
 // Copyright(c) 2021 Alberto Rodriguez Orozco & LiveCharts Contributors
-
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
-
+//
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
-
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -32,6 +32,8 @@ using System.Drawing;
 
 namespace LiveChartsCore.SkiaSharpView.WinForms
 {
+
+    /// <inheritdoc cref="ICartesianChartView{TDrawingContext}" />
     public class CartesianChart : Chart, ICartesianChartView<SkiaSharpDrawingContext>
     {
         private readonly CollectionDeepObserver<ISeries> seriesObserver;
@@ -45,8 +47,13 @@ namespace LiveChartsCore.SkiaSharpView.WinForms
         private IEnumerable<IAxis> xAxes = new List<Axis> { new Axis() };
         private IEnumerable<IAxis> yAxes = new List<Axis> { new Axis() };
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CartesianChart"/> class.
+        /// </summary>
+        /// <param name="tooltip">The default tool tip control.</param>
+        /// <param name="legend">The default legend control.</param>
         public CartesianChart(IChartTooltip<SkiaSharpDrawingContext>? tooltip = null, IChartLegend<SkiaSharpDrawingContext>? legend = null)
-            :base(tooltip, legend)
+            : base(tooltip, legend)
         {
             seriesObserver = new CollectionDeepObserver<ISeries>(OnDeepCollectionChanged, OnDeepCollectionPropertyChanged, true);
             xObserver = new CollectionDeepObserver<IAxis>(OnDeepCollectionChanged, OnDeepCollectionPropertyChanged, true);
@@ -66,14 +73,9 @@ namespace LiveChartsCore.SkiaSharpView.WinForms
             panningThrottler = new ActionThrottler(DoPan, TimeSpan.FromMilliseconds(30));
         }
 
-        CartesianChart<SkiaSharpDrawingContext> ICartesianChartView<SkiaSharpDrawingContext>.Core
-        {
-            get
-            {
-                if (core == null) throw new Exception("core not found");
-                return (CartesianChart<SkiaSharpDrawingContext>)core;
-            }
-        }
+        CartesianChart<SkiaSharpDrawingContext> ICartesianChartView<SkiaSharpDrawingContext>.Core => core == null ? throw new Exception("core not found") : (CartesianChart<SkiaSharpDrawingContext>)core;
+
+        /// <inheritdoc cref="ICartesianChartView{TDrawingContext}.Series" />
 
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public IEnumerable<ISeries> Series
@@ -88,6 +90,7 @@ namespace LiveChartsCore.SkiaSharpView.WinForms
             }
         }
 
+        /// <inheritdoc cref="ICartesianChartView{TDrawingContext}.XAxes" />
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public IEnumerable<IAxis> XAxes
         {
@@ -101,6 +104,7 @@ namespace LiveChartsCore.SkiaSharpView.WinForms
             }
         }
 
+        /// <inheritdoc cref="ICartesianChartView{TDrawingContext}.YAxes" />
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public IEnumerable<IAxis> YAxes
         {
@@ -114,12 +118,17 @@ namespace LiveChartsCore.SkiaSharpView.WinForms
             }
         }
 
+        /// <inheritdoc cref="ICartesianChartView{TDrawingContext}.ZoomMode" />
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public ZoomAndPanMode ZoomMode { get; set; } = LiveCharts.CurrentSettings.DefaultZoomMode;
 
+        /// <inheritdoc cref="ICartesianChartView{TDrawingContext}.ZoomingSpeed" />
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public double ZoomingSpeed { get; set; } = LiveCharts.CurrentSettings.DefaultZoomSpeed;
 
+        /// <summary>
+        /// Initializes the core.
+        /// </summary>
         protected override void InitializeCore()
         {
             core = new CartesianChart<SkiaSharpDrawingContext>(this, LiveChartsSkiaSharp.DefaultPlatformBuilder, motionCanvas.CanvasCore);
@@ -127,6 +136,7 @@ namespace LiveChartsCore.SkiaSharpView.WinForms
             core.Update();
         }
 
+        /// <inheritdoc cref="ICartesianChartView{TDrawingContext}.ScaleUIPoint(PointF, int, int)" />
         public PointF ScaleUIPoint(PointF point, int xAxisIndex = 0, int yAxisIndex = 0)
         {
             if (core == null) throw new Exception("core not found");

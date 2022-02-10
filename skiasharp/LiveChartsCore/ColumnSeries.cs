@@ -1,17 +1,17 @@
 ﻿// The MIT License(MIT)
-
+//
 // Copyright(c) 2021 Alberto Rodriguez Orozco & LiveCharts Contributors
-
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
-
+//
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
-
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -20,25 +20,37 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using LiveChartsCore.Kernel;
 using LiveChartsCore.Drawing;
-using System;
+using LiveChartsCore.Kernel;
 using LiveChartsCore.Measure;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 
 namespace LiveChartsCore
 {
+    /// <summary>
+    /// Defines a column series.
+    /// </summary>
+    /// <typeparam name="TModel"></typeparam>
+    /// <typeparam name="TVisual"></typeparam>
+    /// <typeparam name="TLabel"></typeparam>
+    /// <typeparam name="TDrawingContext"></typeparam>
     public abstract class ColumnSeries<TModel, TVisual, TLabel, TDrawingContext> : BarSeries<TModel, TVisual, TLabel, TDrawingContext>
-        where TVisual : class, ISizedVisualChartPoint<TDrawingContext>, new()
+        where TVisual : class, IRoundedRectangleChartPoint<TDrawingContext>, new()
         where TDrawingContext : DrawingContext
         where TLabel : class, ILabelGeometry<TDrawingContext>, new()
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ColumnSeries{TModel, TVisual, TLabel, TDrawingContext}"/> class.
+        /// </summary>
         public ColumnSeries()
             : base(SeriesProperties.Bar | SeriesProperties.VerticalOrientation)
         {
+            DataPadding = new PointF(0, 1);
         }
 
+        /// <inheritdoc cref="ICartesianSeries{TDrawingContext}.Measure(CartesianChart{TDrawingContext}, IAxis{TDrawingContext}, IAxis{TDrawingContext})"/>
         public override void Measure(
            CartesianChart<TDrawingContext> chart, IAxis<TDrawingContext> secondaryAxis, IAxis<TDrawingContext> primaryAxis)
         {
@@ -46,21 +58,27 @@ namespace LiveChartsCore
             var drawMarginSize = chart.DrawMarginSize;
             var secondaryScale = new Scaler(drawLocation, drawMarginSize, secondaryAxis);
             var primaryScale = new Scaler(drawLocation, drawMarginSize, primaryAxis);
+            var previousPrimaryScale =
+                primaryAxis.PreviousDataBounds == null ? null : new Scaler(drawLocation, drawMarginSize, primaryAxis, true);
             var previousSecondaryScale =
-                secondaryAxis.PreviousDataBounds == null ? null : new Scaler(drawLocation, drawMarginSize, secondaryAxis);
+                secondaryAxis.PreviousDataBounds == null ? null : new Scaler(drawLocation, drawMarginSize, secondaryAxis, true);
 
-            float uw = secondaryScale.ToPixels(1f) - secondaryScale.ToPixels(0f);
-            float uwm = 0.5f * uw;
-            float sw = Stroke?.StrokeThickness ?? 0;
-            float p = primaryScale.ToPixels(pivot);
+            var uw = secondaryScale.ToPixels((float)secondaryAxis.UnitWidth) - secondaryScale.ToPixels(0f);
+            var puw = previousSecondaryScale == null ? 0 : previousSecondaryScale.ToPixels((float)secondaryAxis.UnitWidth) - previousSecondaryScale.ToPixels(0f);
+
+            uw -= (float)GroupPadding;
+            puw -= (float)GroupPadding;
+
+            var uwm = 0.5f * uw;
 
             var pos = chart.SeriesContext.GetColumnPostion(this);
             var count = chart.SeriesContext.GetColumnSeriesCount();
-            float cp = 0f;
+            var cp = 0f;
 
             if (!IgnoresBarPosition && count > 1)
             {
                 uw /= count;
+                puw /= count;
                 uwm = 0.5f * uw;
                 cp = (pos - count / 2f) * uw + uwm;
             }
@@ -68,8 +86,12 @@ namespace LiveChartsCore
             if (uw > MaxBarWidth)
             {
                 uw = (float)MaxBarWidth;
-                uwm = uw / 2f;
+                uwm = uw * 0.5f;
+                puw = uw;
             }
+
+            var sw = Stroke?.StrokeThickness ?? 0;
+            var p = primaryScale.ToPixels(pivot);
 
             var actualZIndex = ZIndex == 0 ? ((ISeries)this).SeriesId : ZIndex;
             if (Fill != null)
@@ -78,7 +100,7 @@ namespace LiveChartsCore
                 Fill.ClipRectangle = new RectangleF(drawLocation, drawMarginSize);
                 chart.Canvas.AddDrawableTask(Fill);
             }
-            if (Stroke != null) 
+            if (Stroke != null)
             {
                 Stroke.ZIndex = actualZIndex + 0.2;
                 Stroke.ClipRectangle = new RectangleF(drawLocation, drawMarginSize);
@@ -93,6 +115,9 @@ namespace LiveChartsCore
 
             var dls = (float)DataLabelsSize;
             var toDeletePoints = new HashSet<ChartPoint>(everFetched);
+
+            var rx = (float)Rx;
+            var ry = (float)Ry;
 
             foreach (var point in Fetch(chart))
             {
@@ -118,14 +143,31 @@ namespace LiveChartsCore
                 if (visual == null)
                 {
                     var xi = secondary - uwm + cp;
-                    if (previousSecondaryScale != null) xi = previousSecondaryScale.ToPixels(point.SecondaryValue) - uwm + cp;
+                    var pi = p;
+                    var uwi = uw;
+                    var hi = 0f;
+
+                    if (previousSecondaryScale != null && previousPrimaryScale != null)
+                    {
+                        var previousP = previousPrimaryScale.ToPixels(pivot);
+                        var previousPrimary = previousPrimaryScale.ToPixels(point.PrimaryValue);
+                        var bp = Math.Abs(previousPrimary - previousP);
+                        var cyp = point.PrimaryValue > pivot ? previousPrimary : previousPrimary - bp;
+
+                        xi = previousSecondaryScale.ToPixels(point.SecondaryValue) - uwm + cp;
+                        pi = chart.IsZoomingOrPanning ? cyp : previousP;
+                        uwi = puw;
+                        hi = chart.IsZoomingOrPanning ? bp : 0;
+                    }
 
                     var r = new TVisual
                     {
                         X = xi,
-                        Y = p,
-                        Width = uw,
-                        Height = 0
+                        Y = pi,
+                        Width = uwi,
+                        Height = 0,
+                        Rx = rx,
+                        Ry = ry
                     };
 
                     visual = r;
@@ -133,7 +175,7 @@ namespace LiveChartsCore
                     OnPointCreated(point);
                     r.CompleteAllTransitions();
 
-                    everFetched.Add(point);
+                    _ = everFetched.Add(point);
                 }
 
                 if (Fill != null) Fill.AddGeometyToPaintTask(visual);
@@ -146,13 +188,15 @@ namespace LiveChartsCore
                 visual.Y = cy;
                 visual.Width = uw;
                 visual.Height = b;
+                visual.Rx = rx;
+                visual.Ry = ry;
                 visual.RemoveOnCompleted = false;
 
                 var ha = new RectangleHoverArea().SetDimensions(secondary - uwm + cp, cy, uw, b);
                 point.Context.HoverArea = ha;
 
                 OnPointMeasured(point);
-                toDeletePoints.Remove(point);
+                _ = toDeletePoints.Remove(point);
 
                 if (DataLabelsDrawableTask != null)
                 {
@@ -162,7 +206,7 @@ namespace LiveChartsCore
                     {
                         var l = new TLabel { X = secondary - uwm + cp, Y = p };
 
-                        l.TransitionateProperties(nameof(l.X), nameof(l.Y))
+                        _ = l.TransitionateProperties(nameof(l.X), nameof(l.Y))
                             .WithAnimation(a =>
                                 a.WithDuration(chart.AnimationsSpeed)
                                 .WithEasingFunction(chart.EasingFunction));
@@ -187,70 +231,95 @@ namespace LiveChartsCore
             {
                 if (point.Context.Chart != chart.View) continue;
                 SoftDeletePoint(point, primaryScale, secondaryScale);
-                everFetched.Remove(point);
+                _ = everFetched.Remove(point);
             }
         }
 
+        /// <inheritdoc cref="ICartesianSeries{TDrawingContext}.GetBounds(CartesianChart{TDrawingContext}, IAxis{TDrawingContext}, IAxis{TDrawingContext})"/>
         public override DimensionalBounds GetBounds(
             CartesianChart<TDrawingContext> chart, IAxis<TDrawingContext> secondaryAxis, IAxis<TDrawingContext> primaryAxis)
         {
             var baseBounds = base.GetBounds(chart, secondaryAxis, primaryAxis);
 
-            var tick = secondaryAxis.GetTick(chart.ControlSize, baseBounds.VisiblePrimaryBounds);
+            var tickPrimary = primaryAxis.GetTick(chart.ControlSize, baseBounds.VisiblePrimaryBounds);
+            var tickSecondary = secondaryAxis.GetTick(chart.ControlSize, baseBounds.VisibleSecondaryBounds);
+
+            var ts = tickSecondary.Value * DataPadding.X;
+            var tp = tickPrimary.Value * DataPadding.Y;
+
+            if (baseBounds.VisibleSecondaryBounds.Delta == 0)
+            {
+                var ms = baseBounds.VisibleSecondaryBounds.Min == 0 ? 1 : baseBounds.VisibleSecondaryBounds.Min;
+                ts = 0.1 * ms * DataPadding.X;
+            }
+
+            if (baseBounds.VisiblePrimaryBounds.Delta == 0)
+            {
+                var mp = baseBounds.VisiblePrimaryBounds.Min == 0 ? 1 : baseBounds.VisiblePrimaryBounds.Min;
+                tp = 0.1 * mp * DataPadding.Y;
+            }
 
             return new DimensionalBounds
             {
                 SecondaryBounds = new Bounds
                 {
-                    Max = baseBounds.SecondaryBounds.Max + 0.5,
-                    Min = baseBounds.SecondaryBounds.Min - 0.5
+                    Max = baseBounds.SecondaryBounds.Max + 0.5 * secondaryAxis.UnitWidth + ts,
+                    Min = baseBounds.SecondaryBounds.Min - 0.5 * secondaryAxis.UnitWidth - ts
                 },
                 PrimaryBounds = new Bounds
                 {
-                    Max = baseBounds.PrimaryBounds.Max + tick.Value,
-                    min = baseBounds.PrimaryBounds.min - tick.Value
+                    Max = baseBounds.PrimaryBounds.Max + tp,
+                    Min = baseBounds.PrimaryBounds.Min - tp
                 },
                 VisibleSecondaryBounds = new Bounds
                 {
-                    Max = baseBounds.VisibleSecondaryBounds.Max + 0.5,
-                    Min = baseBounds.VisibleSecondaryBounds.Min - 0.5
+                    Max = baseBounds.VisibleSecondaryBounds.Max + 0.5 * secondaryAxis.UnitWidth + ts,
+                    Min = baseBounds.VisibleSecondaryBounds.Min - 0.5 * secondaryAxis.UnitWidth - ts
                 },
                 VisiblePrimaryBounds = new Bounds
                 {
-                    Max = baseBounds.VisiblePrimaryBounds.Max + tick.Value,
-                    min = baseBounds.VisiblePrimaryBounds.min - tick.Value
+                    Max = baseBounds.VisiblePrimaryBounds.Max + tp,
+                    Min = baseBounds.VisiblePrimaryBounds.Min - tp
                 },
+                MinDeltaPrimary = baseBounds.MinDeltaPrimary,
+                MinDeltaSecondary = baseBounds.MinDeltaSecondary
             };
         }
 
+        /// <inheritdoc cref="Series{TModel, TVisual, TLabel, TDrawingContext}.SetDefaultPointTransitions(ChartPoint)"/>
         protected override void SetDefaultPointTransitions(ChartPoint chartPoint)
         {
-            var visual = chartPoint.Context.Visual as TVisual;
             var chart = chartPoint.Context.Chart;
 
-            if (visual == null) throw new Exception("Unable to initialize the point instance.");
+            if (chartPoint.Context.Visual is not TVisual visual) throw new Exception("Unable to initialize the point instance.");
 
-            visual
-                .TransitionateProperties(nameof(visual.X), nameof(visual.Width))
+            _ = visual
+                .TransitionateProperties(
+                    nameof(visual.X),
+                    nameof(visual.Width),
+                    nameof(visual.Y),
+                    nameof(visual.Height))
                 .WithAnimation(animation =>
                     animation
                         .WithDuration(chart.AnimationsSpeed)
                         .WithEasingFunction(chart.EasingFunction));
-
-            visual
-                .TransitionateProperties(nameof(visual.Y), nameof(visual.Height))
-                .WithAnimation(animation => animation
-                    .WithDuration(chart.AnimationsSpeed)
-                    .WithEasingFunction(elasticFunction));
         }
 
-        protected override  void SoftDeletePoint(ChartPoint point, Scaler primaryScale, Scaler secondaryScale)
+        /// <inheritdoc cref="Series{TModel, TVisual, TLabel, TDrawingContext}.SoftDeletePoint(ChartPoint, Scaler, Scaler)"/>
+        protected override void SoftDeletePoint(ChartPoint point, Scaler primaryScale, Scaler secondaryScale)
         {
             var visual = (TVisual?)point.Context.Visual;
             if (visual == null) return;
 
-            float p = primaryScale.ToPixels(pivot);
+            var chartView = (ICartesianChartView<TDrawingContext>)point.Context.Chart;
+            if (chartView.Core.IsZoomingOrPanning)
+            {
+                visual.CompleteAllTransitions();
+                visual.RemoveOnCompleted = true;
+                return;
+            }
 
+            var p = primaryScale.ToPixels(pivot);
             var secondary = secondaryScale.ToPixels(point.SecondaryValue);
 
             visual.X = secondary;

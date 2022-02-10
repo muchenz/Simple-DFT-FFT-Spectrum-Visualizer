@@ -33,6 +33,7 @@ namespace Wpf_FFT
 
             var dialogService = new DialogService();
             dialogService.RegisterDialog<DialogOkVM, DialogOk>();
+            dialogService.RegisterDialog<AboutWindowVM, AboutWindow>();
             Container.RegisterInstance<IDialogService>(dialogService);
 
             var mainWindow = Container.Resolve<MainWindow>();

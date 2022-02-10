@@ -1,17 +1,17 @@
 // The MIT License(MIT)
-
+//
 // Copyright(c) 2021 Alberto Rodriguez Orozco & LiveCharts Contributors
-
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
-
+//
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
-
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -32,19 +32,26 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace LiveChartsCore.SkiaSharp.Avalonia
+namespace LiveChartsCore.SkiaSharpView.Avalonia
 {
+    /// <summary>
+    /// Defines a default tool tip for a chart control.
+    /// </summary>
     public class DefaultTooltip : UserControl, IChartTooltip<SkiaSharpDrawingContext>
     {
-        private readonly DataTemplate defaultTemplate;
-        private readonly Dictionary<ChartPoint, object> activePoints = new();
+        private readonly DataTemplate _defaultTemplate;
+        private readonly Dictionary<ChartPoint, object> _activePoints = new();
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DefaultTooltip"/> class.
+        /// </summary>
+        /// <exception cref="Exception">default template not found</exception>
         public DefaultTooltip()
         {
             InitializeComponent();
             var t = (DataTemplate?)Resources["defaultTemplate"];
-            if (t == null) throw new Exception("default tempalte not found");
-            defaultTemplate = t;
+            if (t == null) throw new Exception("default template not found");
+            _defaultTemplate = t;
             TooltipTemplate = t;
             Canvas.SetTop(this, 0);
             Canvas.SetLeft(this, 0);
@@ -52,20 +59,68 @@ namespace LiveChartsCore.SkiaSharp.Avalonia
 
         #region properties
 
+        /// <summary>
+        /// Gets or sets the tool tip template.
+        /// </summary>
+        /// <value>
+        /// The tool tip template.
+        /// </value>
         public DataTemplate? TooltipTemplate { get; set; } = null;
 
+        /// <summary>
+        /// Gets or sets the points.
+        /// </summary>
+        /// <value>
+        /// The points.
+        /// </value>
         public IEnumerable<TooltipPoint> Points { get; set; } = Enumerable.Empty<TooltipPoint>();
 
+        /// <summary>
+        /// Gets or sets the tool tip font family.
+        /// </summary>
+        /// <value>
+        /// The tool tip font family.
+        /// </value>
         public FontFamily TooltipFontFamily { get; set; } = new FontFamily("Trebuchet MS");
 
+        /// <summary>
+        /// Gets or sets the size of the tool tip font.
+        /// </summary>
+        /// <value>
+        /// The size of the tool tip font.
+        /// </value>
         public double TooltipFontSize { get; set; }
 
+        /// <summary>
+        /// Gets or sets the tool tip font weight.
+        /// </summary>
+        /// <value>
+        /// The tool tip font weight.
+        /// </value>
         public FontWeight TooltipFontWeight { get; set; }
 
+        /// <summary>
+        /// Gets or sets the tool tip font style.
+        /// </summary>
+        /// <value>
+        /// The tool tip font style.
+        /// </value>
         public FontStyle TooltipFontStyle { get; set; }
 
+        /// <summary>
+        /// Gets or sets the tool tip text brush.
+        /// </summary>
+        /// <value>
+        /// The tool tip text brush.
+        /// </value>
         public SolidColorBrush TooltipTextBrush { get; set; } = new SolidColorBrush(Color.FromRgb(35, 35, 35));
 
+        /// <summary>
+        /// Gets or sets the tooltip background.
+        /// </summary>
+        /// <value>
+        /// The tooltip background.
+        /// </value>
         public IBrush TooltipBackground { get; set; } = new SolidColorBrush(Color.FromRgb(250, 250, 250));
 
         #endregion
@@ -74,15 +129,15 @@ namespace LiveChartsCore.SkiaSharp.Avalonia
         {
             var avaloniaChart = (IAvaloniaChart)chart.View;
 
-            var template = avaloniaChart.TooltipTemplate ?? defaultTemplate;
+            var template = avaloniaChart.TooltipTemplate ?? _defaultTemplate;
             if (TooltipTemplate != template) TooltipTemplate = template;
 
             if (!tooltipPoints.Any())
             {
-                foreach (var key in activePoints.Keys.ToArray())
+                foreach (var key in _activePoints.Keys.ToArray())
                 {
                     key.RemoveFromHoverState();
-                    activePoints.Remove(key);
+                    _ = _activePoints.Remove(key);
                 }
                 return;
             }
@@ -137,22 +192,26 @@ namespace LiveChartsCore.SkiaSharp.Avalonia
             foreach (var tooltipPoint in tooltipPoints)
             {
                 tooltipPoint.Point.AddToHoverState();
-                activePoints[tooltipPoint.Point] = o;
+                _activePoints[tooltipPoint.Point] = o;
             }
 
-            foreach (var key in activePoints.Keys.ToArray())
+            foreach (var key in _activePoints.Keys.ToArray())
             {
-                if (activePoints[key] == o) continue;
+                if (_activePoints[key] == o) continue;
                 key.RemoveFromHoverState();
-                activePoints.Remove(key);
+                _ = _activePoints.Remove(key);
             }
 
             chart.Canvas.Invalidate();
         }
 
+        /// <summary>
+        /// Builds the content.
+        /// </summary>
+        /// <returns></returns>
         protected void BuildContent()
         {
-            var template = TooltipTemplate ?? defaultTemplate;
+            var template = TooltipTemplate ?? _defaultTemplate;
             var model = new TooltipBindingContext
             {
                 Points = Points,
@@ -168,6 +227,11 @@ namespace LiveChartsCore.SkiaSharp.Avalonia
             if (templated == null) return;
 
             Content = templated;
+        }
+
+        void IChartTooltip<SkiaSharpDrawingContext>.Hide()
+        {
+            Content = null;
         }
 
         private void InitializeComponent()

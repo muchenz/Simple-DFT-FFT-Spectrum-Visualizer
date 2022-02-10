@@ -1,17 +1,17 @@
 ﻿// The MIT License(MIT)
-
+//
 // Copyright(c) 2021 Alberto Rodriguez Orozco & LiveCharts Contributors
-
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
-
+//
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
-
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -20,40 +20,27 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using LiveChartsCore.Drawing;
-using System;
-using System.Drawing;
-
-namespace LiveChartsCore
+namespace LiveChartsCore.Kernel
 {
-    public class StyleBuilder<TDrawingContext>
-        where TDrawingContext : DrawingContext
+    /// <summary>
+    /// Defines the chart update parameter.
+    /// </summary>
+    public class ChartUpdateParams
     {
-        private Color[]? colors;
-        private LiveChartsInitializer<TDrawingContext>? seriesInitializer;
+        /// <summary>
+        /// Gets or sets a value indicating whether this instance is automatic update.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if this instance is automatic update; otherwise, <c>false</c>.
+        /// </value>
+        public bool IsAutomaticUpdate { get; set; } = true;
 
-        public Color[]? CurrentColors => colors;
-
-        public StyleBuilder<TDrawingContext> UseColors(params Color[] colors)
-        {
-            this.colors = colors;
-            return this;
-        }
-
-        public StyleBuilder<TDrawingContext> UseSeriesInitializer(LiveChartsInitializer<TDrawingContext> seriesInitializer)
-        {
-            this.seriesInitializer = seriesInitializer;
-            return this;
-        }
-
-        public LiveChartsInitializer<TDrawingContext> GetInitializer()
-        {
-            if (seriesInitializer == null)
-                throw new NullReferenceException(
-                    $"An instance of {nameof(LiveChartsInitializer<TDrawingContext>)} is no configured yet, " +
-                    $"please register an instance using {nameof(UseSeriesInitializer)}() method.");
-
-            return seriesInitializer;
-        }
+        /// <summary>
+        /// Gets or sets a value indicating whether this <see cref="ChartUpdateParams"/> is throttling.
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if throttling; otherwise, <c>false</c>.
+        /// </value>
+        public bool Throttling { get; set; } = true;
     }
 }

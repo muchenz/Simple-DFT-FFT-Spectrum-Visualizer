@@ -1,17 +1,17 @@
 ﻿// The MIT License(MIT)
-
+//
 // Copyright(c) 2021 Alberto Rodriguez Orozco & LiveCharts Contributors
-
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
-
+//
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
-
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -33,6 +33,14 @@ using System.Runtime.CompilerServices;
 
 namespace LiveChartsCore
 {
+    /// <summary>
+    /// Defines an Axis in a Cartesian chart.
+    /// </summary>
+    /// <typeparam name="TDrawingContext">The type of the drawing context.</typeparam>
+    /// <typeparam name="TTextGeometry">The type of the text geometry.</typeparam>
+    /// <typeparam name="TLineGeometry">The type of the line geometry.</typeparam>
+    /// <seealso cref="IAxis{TDrawingContext}" />
+    /// <seealso cref="INotifyPropertyChanged" />
     public class Axis<TDrawingContext, TTextGeometry, TLineGeometry> : IAxis<TDrawingContext>, INotifyPropertyChanged
         where TDrawingContext : DrawingContext
         where TTextGeometry : ILabelGeometry<TDrawingContext>, new()
@@ -40,30 +48,35 @@ namespace LiveChartsCore
     {
         #region fields
 
+        /// <summary>
+        /// Get a <see cref="HashSet{T}"/> reference to the charts that are subscribed to this axis.
+        /// </summary>
         protected readonly HashSet<IChart> subscribedTo = new();
-        private const float wedgeLength = 8;
-        internal AxisOrientation orientation;
-        private double minStep = 0;
-        private Bounds dataBounds = new();
-        private Bounds visibleDataBounds = new();
-        private Bounds? previousDataBounds = null;
-        private double labelsRotation;
-        private readonly Dictionary<CartesianChart<TDrawingContext>, Dictionary<string, AxisVisualSeprator<TDrawingContext>>> activeSeparators = new();
-        // xo (x origin) and yo (y origin) are the distance to the center of the axis to the control bounds
-        internal float xo = 0f, yo = 0f;
-        private AxisPosition position = AxisPosition.Start;
-        private Func<double, string> labeler = Labelers.Default;
-        private Padding padding = new() { Left = 8, Top = 8, Bottom = 8, Right = 9 };
-        private double? minLimit = null;
-        private double? maxLimit = null;
-        private IDrawableTask<TDrawingContext>? textBrush;
-        private double unitWith = 1;
+        /// <summary>
+        /// Gets a <see cref="HashSet{T}"/> reference to the pending to delete paint tasks.
+        /// </summary>
         protected List<IDrawableTask<TDrawingContext>> deletingTasks = new();
-        private double textSize = 16;
-        private IDrawableTask<TDrawingContext>? separatorsBrush;
-        private bool showSeparatorLines = true;
-        private bool showSeparatorWedges = true;
-        private bool isInverted;
+        internal AxisOrientation _orientation;
+        private double _minStep = 0;
+        private Bounds? _dataBounds = null;
+        private Bounds? _visibleDataBounds = null;
+        private double _labelsRotation;
+        private readonly Dictionary<CartesianChart<TDrawingContext>, Dictionary<string, AxisVisualSeprator<TDrawingContext>>> _activeSeparators = new();
+        // xo (x origin) and yo (y origin) are the distance to the center of the axis to the control bounds
+        internal float _xo = 0f, _yo = 0f;
+        private AxisPosition _position = AxisPosition.Start;
+        private Func<double, string> _labeler = Labelers.Default;
+        private Padding _padding = new() { Left = 8, Top = 8, Bottom = 8, Right = 9 };
+        private double? _minLimit = null;
+        private double? _maxLimit = null;
+        private IDrawableTask<TDrawingContext>? _textBrush;
+        private double _unitWidth = 1;
+        private double _textSize = 16;
+        private IDrawableTask<TDrawingContext>? _separatorsBrush;
+        private bool _showSeparatorLines = true;
+        private bool _showSeparatorWedges = true;
+        private bool _isVisible = true;
+        private bool _isInverted;
 
         #endregion
 
@@ -71,65 +84,74 @@ namespace LiveChartsCore
 
         List<IDrawableTask<TDrawingContext>> IAxis<TDrawingContext>.DeletingTasks => deletingTasks;
 
-        float IAxis.Xo { get => xo; set => xo = value; }
-        float IAxis.Yo { get => yo; set => yo = value; }
+        float IAxis.Xo { get => _xo; set => _xo = value; }
+        float IAxis.Yo { get => _yo; set => _yo = value; }
 
-        Bounds? IAxis.PreviousDataBounds => previousDataBounds;
+        Bounds? IAxis.PreviousDataBounds { get; set; }
 
-        Bounds IAxis.DataBounds => dataBounds;
+        Bounds? IAxis.PreviousVisibleDataBounds { get; set; }
 
-        Bounds IAxis.VisibleDataBounds => visibleDataBounds;
+        double? IAxis.PreviousMaxLimit { get; set; }
+
+        double? IAxis.PreviousMinLimit { get; set; }
+
+        Bounds IAxis.DataBounds => _dataBounds ?? throw new Exception("bounds not found");
+
+        Bounds IAxis.VisibleDataBounds => _visibleDataBounds ?? throw new Exception("bounds not found");
 
         /// <inheritdoc cref="IAxis.Orientation"/>
-        public AxisOrientation Orientation { get => orientation; }
+        public AxisOrientation Orientation => _orientation;
 
         /// <inheritdoc cref="IAxis.Padding"/>
-        public Padding Padding { get => padding; set { padding = value; OnPropertyChanged(); } }
+        public Padding Padding { get => _padding; set { _padding = value; OnPropertyChanged(); } }
 
         /// <inheritdoc cref="IAxis.Labeler"/>
-        public Func<double, string> Labeler { get => labeler; set { labeler = value; OnPropertyChanged(); } }
+        public Func<double, string> Labeler { get => _labeler; set { _labeler = value; OnPropertyChanged(); } }
 
         /// <inheritdoc cref="IAxis.MinStep"/>
-        public double MinStep { get => minStep; set { minStep = value; OnPropertyChanged(); } }
+        public double MinStep { get => _minStep; set { _minStep = value; OnPropertyChanged(); } }
 
         /// <inheritdoc cref="IAxis.MinLimit"/>
-        public double? MinLimit { get => minLimit; set { minLimit = value; OnPropertyChanged(); } }
+        public double? MinLimit { get => _minLimit; set { _minLimit = value; OnPropertyChanged(); } }
 
         /// <inheritdoc cref="IAxis.MaxLimit"/>
-        public double? MaxLimit { get => maxLimit; set { maxLimit = value; OnPropertyChanged(); } }
+        public double? MaxLimit { get => _maxLimit; set { _maxLimit = value; OnPropertyChanged(); } }
 
-        /// <inheritdoc cref="IAxis.UnitWith"/>
-        public double UnitWith { get => unitWith; set { unitWith = value; OnPropertyChanged(); } }
+        /// <inheritdoc cref="IAxis.UnitWidth"/>
+        public double UnitWidth { get => _unitWidth; set { _unitWidth = value; OnPropertyChanged(); } }
 
         /// <inheritdoc cref="IAxis.Position"/>
-        public AxisPosition Position { get => position; set { position = value; OnPropertyChanged(); } }
+        public AxisPosition Position { get => _position; set { _position = value; OnPropertyChanged(); } }
 
         /// <inheritdoc cref="IAxis.LabelsRotation"/>
-        public double LabelsRotation { get => labelsRotation; set { labelsRotation = value; OnPropertyChanged(); } }
+        public double LabelsRotation { get => _labelsRotation; set { _labelsRotation = value; OnPropertyChanged(); } }
 
         /// <inheritdoc cref="IAxis.TextSize"/>
-        public double TextSize { get => textSize; set { textSize = value; OnPropertyChanged(); } }
+        public double TextSize { get => _textSize; set { _textSize = value; OnPropertyChanged(); } }
 
         /// <inheritdoc cref="IAxis.Labels"/>
         public IList<string>? Labels { get; set; }
 
         /// <inheritdoc cref="IAxis.ShowSeparatorLines"/>
-        public bool ShowSeparatorLines { get => showSeparatorLines; set { showSeparatorLines = value; OnPropertyChanged(); } }
+        public bool ShowSeparatorLines { get => _showSeparatorLines; set { _showSeparatorLines = value; OnPropertyChanged(); } }
 
         /// <inheritdoc cref="IAxis.ShowSeparatorWedges"/>
-        public bool ShowSeparatorWedges { get => showSeparatorWedges; set { showSeparatorWedges = value; OnPropertyChanged(); } }
+        public bool ShowSeparatorWedges { get => _showSeparatorWedges; set { _showSeparatorWedges = value; OnPropertyChanged(); } }
+
+        /// <inheritdoc cref="IAxis.IsVisible"/>
+        public bool IsVisible { get => _isVisible; set { _isVisible = value; OnPropertyChanged(); } }
 
         /// <inheritdoc cref="IAxis.IsInverted"/>
-        public bool IsInverted { get => isInverted; set { isInverted = value; OnPropertyChanged(); } }
+        public bool IsInverted { get => _isInverted; set { _isInverted = value; OnPropertyChanged(); } }
 
         /// <inheritdoc cref="IAxis{TDrawingContext}.TextBrush"/>
         public IDrawableTask<TDrawingContext>? TextBrush
         {
-            get => textBrush;
+            get => _textBrush;
             set
             {
-                if (textBrush != null) deletingTasks.Add(textBrush);
-                textBrush = value;
+                if (_textBrush != null) deletingTasks.Add(_textBrush);
+                _textBrush = value;
                 OnPropertyChanged();
             }
         }
@@ -137,11 +159,11 @@ namespace LiveChartsCore
         /// <inheritdoc cref="IAxis{TDrawingContext}.SeparatorsBrush"/>
         public IDrawableTask<TDrawingContext>? SeparatorsBrush
         {
-            get => separatorsBrush;
+            get => _separatorsBrush;
             set
             {
-                if (separatorsBrush != null) deletingTasks.Add(separatorsBrush);
-                separatorsBrush = value;
+                if (_separatorsBrush != null) deletingTasks.Add(_separatorsBrush);
+                _separatorsBrush = value;
                 OnPropertyChanged();
             }
         }
@@ -157,16 +179,16 @@ namespace LiveChartsCore
         /// <inheritdoc cref="IAxis{TDrawingContext}.Measure(CartesianChart{TDrawingContext})"/>
         public void Measure(CartesianChart<TDrawingContext> chart)
         {
-            if (dataBounds == null) throw new Exception("DataBounds not found");
+            if (_dataBounds == null) throw new Exception("DataBounds not found");
 
-            subscribedTo.Add(chart);
+            _ = subscribedTo.Add(chart);
 
             var controlSize = chart.ControlSize;
             var drawLocation = chart.DrawMaringLocation;
             var drawMarginSize = chart.DrawMarginSize;
 
             var scale = new Scaler(drawLocation, drawMarginSize, this);
-            var previousSacale = previousDataBounds == null
+            var previousSacale = ((IAxis)this).PreviousDataBounds == null
                 ? null
                 : new Scaler(drawLocation, drawMarginSize, this);
             var axisTick = this.GetTick(drawMarginSize);
@@ -175,11 +197,11 @@ namespace LiveChartsCore
             if (Labels != null)
             {
                 labeler = Labelers.BuildNamedLabeler(Labels).Function;
-                minStep = 1;
+                _minStep = 1;
             }
 
             var s = axisTick.Value;
-            if (s < minStep) s = minStep;
+            if (s < _minStep) s = _minStep;
 
             if (TextBrush != null)
             {
@@ -200,45 +222,43 @@ namespace LiveChartsCore
 
             float xoo = 0f, yoo = 0f;
 
-            if (orientation == AxisOrientation.X)
+            if (_orientation == AxisOrientation.X)
             {
-                yoo = position == AxisPosition.Start
-                     ? controlSize.Height - yo
-                     : yo;
+                yoo = _position == AxisPosition.Start
+                     ? controlSize.Height - _yo
+                     : _yo;
             }
             else
             {
-                xoo = position == AxisPosition.Start
-                    ? xo
-                    : controlSize.Width - xo;
+                xoo = _position == AxisPosition.Start
+                    ? _xo
+                    : controlSize.Width - _xo;
             }
 
             var size = (float)TextSize;
-            var r = (float)labelsRotation;
+            var r = (float)_labelsRotation;
             var hasRotation = Math.Abs(r) > 0.01f;
 
-            var max = MaxLimit == null ? dataBounds.Max : MaxLimit.Value;
-            var min = MinLimit == null ? dataBounds.Min : MinLimit.Value;
+            var max = MaxLimit == null ? _dataBounds.Max : MaxLimit.Value;
+            var min = MinLimit == null ? _dataBounds.Min : MinLimit.Value;
 
             var start = Math.Truncate(min / s) * s;
-            if (!activeSeparators.TryGetValue(chart, out var separators))
+            if (!_activeSeparators.TryGetValue(chart, out var separators))
             {
                 separators = new Dictionary<string, AxisVisualSeprator<TDrawingContext>>();
-                activeSeparators[chart] = separators;
+                _activeSeparators[chart] = separators;
             }
 
             var measured = new HashSet<AxisVisualSeprator<TDrawingContext>>();
 
             if (max / s > 1000) s = max / 1000;
-
-
             for (var i = start; i <= max; i += s)
             {
                 if (i < min) continue;
 
                 var label = labeler(i);
                 float x, y;
-                if (orientation == AxisOrientation.X)
+                if (_orientation == AxisOrientation.X)
                 {
                     x = scale.ToPixels((float)i);
                     y = yoo;
@@ -259,10 +279,11 @@ namespace LiveChartsCore
                         visualSeparator.Text = textGeometry;
                         if (hasRotation) textGeometry.Rotation = r;
 
-                        textGeometry
+                        _ = textGeometry
                             .TransitionateProperties(
                                 nameof(textGeometry.X),
-                                nameof(textGeometry.Y))
+                                nameof(textGeometry.Y),
+                                nameof(textGeometry.Opacity))
                             .WithAnimation(animation =>
                                 animation
                                     .WithDuration(chart.AnimationsSpeed)
@@ -272,7 +293,7 @@ namespace LiveChartsCore
                         {
                             float xi, yi;
 
-                            if (orientation == AxisOrientation.X)
+                            if (_orientation == AxisOrientation.X)
                             {
                                 xi = previousSacale.ToPixels((float)i);
                                 yi = yoo;
@@ -289,16 +310,17 @@ namespace LiveChartsCore
                         }
                     }
 
-                    if (SeparatorsBrush != null)
+                    if (SeparatorsBrush != null && ShowSeparatorLines)
                     {
                         var lineGeometry = new TLineGeometry();
 
                         visualSeparator.Line = lineGeometry;
 
-                        lineGeometry
+                        _ = lineGeometry
                             .TransitionateProperties(
                                 nameof(lineGeometry.X), nameof(lineGeometry.X1),
-                                nameof(lineGeometry.Y), nameof(lineGeometry.Y1))
+                                nameof(lineGeometry.Y), nameof(lineGeometry.Y1),
+                                nameof(lineGeometry.Opacity))
                             .WithAnimation(animation =>
                                 animation
                                     .WithDuration(chart.AnimationsSpeed)
@@ -308,7 +330,7 @@ namespace LiveChartsCore
                         {
                             float xi, yi;
 
-                            if (orientation == AxisOrientation.X)
+                            if (_orientation == AxisOrientation.X)
                             {
                                 xi = previousSacale.ToPixels((float)i);
                                 yi = yoo;
@@ -319,7 +341,7 @@ namespace LiveChartsCore
                                 yi = previousSacale.ToPixels((float)i);
                             }
 
-                            if (orientation == AxisOrientation.X)
+                            if (_orientation == AxisOrientation.X)
                             {
                                 lineGeometry.X = xi;
                                 lineGeometry.X1 = xi;
@@ -342,23 +364,22 @@ namespace LiveChartsCore
                 }
 
                 if (TextBrush != null && visualSeparator.Text != null) TextBrush.AddGeometyToPaintTask(visualSeparator.Text);
-                if (SeparatorsBrush != null && visualSeparator.Line != null) SeparatorsBrush.AddGeometyToPaintTask(visualSeparator.Line);
+                if (SeparatorsBrush != null && ShowSeparatorLines && visualSeparator.Line != null) SeparatorsBrush.AddGeometyToPaintTask(visualSeparator.Line);
 
                 if (visualSeparator.Text != null)
                 {
                     visualSeparator.Text.Text = label;
-                    visualSeparator.Text.Padding = padding;
+                    visualSeparator.Text.Padding = _padding;
                     visualSeparator.Text.X = x;
                     visualSeparator.Text.Y = y;
                     if (hasRotation) visualSeparator.Text.Rotation = r;
 
-                    if (previousDataBounds == null) visualSeparator.Text.CompleteAllTransitions();
-
+                    if (((IAxis)this).PreviousDataBounds == null) visualSeparator.Text.CompleteAllTransitions();
                 }
 
                 if (visualSeparator.Line != null)
                 {
-                    if (orientation == AxisOrientation.X)
+                    if (_orientation == AxisOrientation.X)
                     {
                         visualSeparator.Line.X = x;
                         visualSeparator.Line.X1 = x;
@@ -373,10 +394,10 @@ namespace LiveChartsCore
                         visualSeparator.Line.Y1 = y;
                     }
 
-                    if (previousDataBounds == null) visualSeparator.Line.CompleteAllTransitions();
+                    if (((IAxis)this).PreviousDataBounds == null) visualSeparator.Line.CompleteAllTransitions();
                 }
 
-                if (visualSeparator.Text != null || visualSeparator.Line != null) measured.Add(visualSeparator);
+                if (visualSeparator.Text != null || visualSeparator.Line != null) _ = measured.Add(visualSeparator);
             }
 
             foreach (var separator in separators.ToArray())
@@ -385,14 +406,14 @@ namespace LiveChartsCore
 
 
                 SoftDeleteSeparator(chart, separator.Value, scale);
-                separators.Remove(separator.Key);
+                _ = separators.Remove(separator.Key);
             }
         }
 
         /// <inheritdoc cref="IAxis{TDrawingContext}.GetPossibleSize(CartesianChart{TDrawingContext})"/>
         public SizeF GetPossibleSize(CartesianChart<TDrawingContext> chart)
         {
-            if (dataBounds == null) throw new Exception("DataBounds not found");
+            if (_dataBounds == null) throw new Exception("DataBounds not found");
             if (TextBrush == null) return new SizeF(0f, 0f);
 
             var ts = (float)TextSize;
@@ -401,35 +422,32 @@ namespace LiveChartsCore
             if (Labels != null)
             {
                 labeler = Labelers.BuildNamedLabeler(Labels).Function;
-                minStep = 1;
+                _minStep = 1;
             }
 
             var axisTick = this.GetTick(chart.DrawMarginSize);
             var s = axisTick.Value;
-            if (s < minStep) s = minStep;
+            if (s < _minStep) s = _minStep;
 
-            var start = Math.Truncate(dataBounds.min / s) * s;
+            var start = Math.Truncate(_dataBounds.Min / s) * s;
 
             var w = 0f;
             var h = 0f;
             var r = (float)LabelsRotation;
 
-            if (dataBounds.max / s > 1000) s = dataBounds.max / 1000;
-
-
-            for (var i = start; i <= dataBounds.max; i += s)
+            if (_dataBounds.Max / s > 1000) s = _dataBounds.Max / 1000;
+            for (var i = start; i <= _dataBounds.Max; i += s)
             {
                 var textGeometry = new TTextGeometry
                 {
                     Text = labeler(i),
                     TextSize = ts,
                     Rotation = r,
-                    Padding = padding
+                    Padding = _padding
                 };
                 var m = textGeometry.Measure(TextBrush); // TextBrush.MeasureText(labeler(i, axisTick));
                 if (m.Width > w) w = m.Width;
                 if (m.Height > h) h = m.Height;
-                
             }
 
             return new SizeF(w, h);
@@ -438,10 +456,9 @@ namespace LiveChartsCore
         /// <inheritdoc cref="IAxis.Initialize(AxisOrientation)"/>
         public void Initialize(AxisOrientation orientation)
         {
-            this.orientation = orientation;
-            previousDataBounds = dataBounds;
-            dataBounds = new Bounds();
-            visibleDataBounds = new Bounds();
+            _orientation = orientation;
+            _dataBounds = new Bounds();
+            _visibleDataBounds = new Bounds();
         }
 
         /// <inheritdoc cref="IDisposable.Dispose"/>
@@ -451,12 +468,17 @@ namespace LiveChartsCore
             {
                 var cartesianChart = (CartesianChart<TDrawingContext>)chart;
                 var canvas = cartesianChart.View.CoreCanvas;
-                if (textBrush != null) canvas.RemovePaintTask(textBrush);
-                if (separatorsBrush != null) canvas.RemovePaintTask(separatorsBrush);
-                activeSeparators.Remove(cartesianChart);
+                if (_textBrush != null) canvas.RemovePaintTask(_textBrush);
+                if (_separatorsBrush != null) canvas.RemovePaintTask(_separatorsBrush);
+                _ = _activeSeparators.Remove(cartesianChart);
             }
         }
 
+        /// <summary>
+        /// Called when a property changes.
+        /// </summary>
+        /// <param name="propertyName">Name of the property.</param>
+        /// <returns></returns>
         protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
@@ -478,21 +500,21 @@ namespace LiveChartsCore
 
             float xoo = 0f, yoo = 0f;
 
-            if (orientation == AxisOrientation.X)
+            if (_orientation == AxisOrientation.X)
             {
-                yoo = position == AxisPosition.Start
-                     ? controlSize.Height - yo
-                     : yo;
+                yoo = _position == AxisPosition.Start
+                     ? controlSize.Height - _yo
+                     : _yo;
             }
             else
             {
-                xoo = position == AxisPosition.Start
-                    ? xo
-                    : controlSize.Width - xo;
+                xoo = _position == AxisPosition.Start
+                    ? _xo
+                    : controlSize.Width - _xo;
             }
 
             float x, y;
-            if (orientation == AxisOrientation.X)
+            if (_orientation == AxisOrientation.X)
             {
                 x = scale.ToPixels((float)separator.Value);
                 y = yoo;
@@ -505,7 +527,7 @@ namespace LiveChartsCore
 
             if (separator.Line != null)
             {
-                if (orientation == AxisOrientation.X)
+                if (_orientation == AxisOrientation.X)
                 {
                     separator.Line.X = x;
                     separator.Line.X1 = x;
@@ -520,6 +542,7 @@ namespace LiveChartsCore
                     separator.Line.Y1 = y;
                 }
 
+                separator.Line.Opacity = 0;
                 separator.Line.RemoveOnCompleted = true;
             }
 
@@ -527,6 +550,7 @@ namespace LiveChartsCore
             {
                 separator.Text.X = x;
                 separator.Text.Y = y;
+                separator.Text.Opacity = 0;
                 separator.Text.RemoveOnCompleted = true;
             }
         }
