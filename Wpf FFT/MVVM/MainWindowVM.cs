@@ -54,7 +54,7 @@ namespace Wpf_FFT.MVVM
 
 
 
-        private string _functionToFFT2 = "if( sin(2.0 * pi * time * frequency)>0 , 1, -1)";
+        //private string _functionToFFT2 = "if( sin(2.0 * pi * time * frequency)>0 , 1, -1)";
         private string _functionToFFT = "sin(2.0 * pi* t* f)*e^(t*100)";
 
         public string FunctionToFFT
@@ -87,7 +87,7 @@ namespace Wpf_FFT.MVVM
                 }, (o) =>
                 {
 
-                    System.Diagnostics.Trace.WriteLine("a");
+                    //System.Diagnostics.Trace.WriteLine("a");
                     return string.IsNullOrEmpty(ErrorMessage);
                 });
                 // PropertyChanged += t.NotifyMaybyExecuteChanged;
@@ -166,12 +166,12 @@ namespace Wpf_FFT.MVVM
 
                 if (columnName == nameof(FunctionToFFT))
                 {
-                    org.mariuszgromada.math.mxparser.Argument pierwszy = new("t", 1);
-                    org.mariuszgromada.math.mxparser.Argument drugi = new("f", 2);
+                    org.mariuszgromada.math.mxparser.Argument timeArg = new("t", 1);
+                    org.mariuszgromada.math.mxparser.Argument frequencyArg = new("f", 2);
 
-                    org.mariuszgromada.math.mxparser.Expression f = new(FunctionToFFT, pierwszy, drugi);
+                    org.mariuszgromada.math.mxparser.Expression func = new(FunctionToFFT, timeArg, frequencyArg);
 
-                    if (!f.checkSyntax())
+                    if (!func.checkSyntax())
                         return ErrorMessage = "Function Syntax Error";
                 }
                 else if (columnName == nameof(Frequency))
