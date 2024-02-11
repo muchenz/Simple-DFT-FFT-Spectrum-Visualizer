@@ -10,30 +10,33 @@ namespace Wpf_FFT
 {
     public  class FttHelper
     {
-        public static  void GetExpressionFromString(string FunctionToFFT, out Argument pierwszy, out Argument drugi, out org.mariuszgromada.math.mxparser.Expression f)
+        public static  void GetExpressionFromString(string FunctionToFFT, out Argument time, out Argument frequency,
+            out Expression f)
         {
-            pierwszy = new("t", 1);
-            drugi = new("f", 2);
-            f = new(FunctionToFFT, pierwszy, drugi);
+            time = new("t", 1);
+            frequency = new("f", 2);
+            f = new(FunctionToFFT, time, frequency);
         }
 
-        public static double[] GetInputData(double frequency, uint length, double samplingRate, Argument timeArg, Argument frequencyArg, org.mariuszgromada.math.mxparser.Expression expression)
+
+        public static double[] GetInputData(double frequency, uint length, double samplingRate, Argument timeArg, 
+            Argument frequencyArg, Expression expression)
         {
-            return DSP.Generate.ToneSampling2((t, freq) =>
+            return DSP.Generate.ToneSampling2((time, freq) =>
             {
 
-                timeArg.setArgumentValue(t);
+                timeArg.setArgumentValue(time);
                 frequencyArg.setArgumentValue(freq);
 
 
-                var w = expression.calculate();
+                var result = expression.calculate();
 
 
-                if (double.IsNaN(w) || double.IsInfinity(w))
+                if (double.IsNaN(result) || double.IsInfinity(result))
                 {
                     throw new CalculateException("During calculate value 'NaN' or 'Infinite' occurs");
                 }
-                return w;
+                return result;
 
 
             }, frequency, samplingRate, length);
