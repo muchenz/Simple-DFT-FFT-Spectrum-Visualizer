@@ -9,5 +9,4 @@ Put time functions and see their frequency domain spectrum.
 * Changed runtime to newer .NET8.0
   
 Download:
-
-[Simple-DFT-FFT-Spectrum-Visualizer.zip](https://github.com/muchenz/Simple-DFT-FFT-Spectrum-Visualizer/files/8045062/Simple-DFT-FFT-Spectrum-Visualizer.zip)
+* Framework dependent (.NET8.0):  [Simple-DFT-FFT-Spectrum-Visualizer.zip](https://github.com/muchenz/Simple-DFT-FFT-Spectrum-Visualizer/files/14234383/Simple-DFT-FFT-Spectrum-Visualizer.zip)
