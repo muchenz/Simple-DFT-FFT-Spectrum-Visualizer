@@ -5,7 +5,7 @@ Put time functions and see their frequency domain spectrum.
 
 #### ver. 1.0.0.2
 * Added scroll bar as resolution is less than 1080p
-* Added hook for better adjustment of the chart when image scaling is enabled
+* Added hook for better adjustment of the chart when windows custom scaling is used
 * Changed runtime to newer .NET8.0
   
 Download:
