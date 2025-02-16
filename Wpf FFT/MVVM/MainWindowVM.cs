@@ -310,20 +310,45 @@ namespace Wpf_FFT.MVVM
             NotifyPropertyChanged(nameof(Lenght));
         }
 
-        bool _isShift = true;
-        public bool IsShift
+        bool _isFullSpectrum = true;
+        public bool IsFullSpectrum
         {
-            get { return _isShift; }
+            get { return _isFullSpectrum; }
             set
             {
-                _isShift = value;
+                _isFullSpectrum = value;
                 NotifyPropertyChanged();
             }
         }
+
+        bool _isBins = false;
+        public bool IsBins
+        {
+            get { return _isBins; }
+            set
+            {
+                _isBins = value;
+                NotifyPropertyChanged();
+            }
+        }
+
+        bool _isCopyNyquist = true;
+        public bool IsCopyNyquist
+        {
+            get { return _isCopyNyquist; }
+            set
+            {
+                _isCopyNyquist = value;
+                NotifyPropertyChanged();
+            }
+        }
+
         System.IFormatProvider cultureUS = new System.Globalization.CultureInfo("en-US");
         Complex[] _cSpectrum;
+        Complex[] _cSpectrumCopyBeforeShift;
+
         double[] _freqSpan;
-        bool _oldShiftValue;
+        bool _oldIsFullSpectrumValue;
         void ComputeTransformation()
         {
             // Generate a test signal,
@@ -350,13 +375,15 @@ namespace Wpf_FFT.MVVM
             double[] windowedTimeSeries = DSP.Math.Multiply(inputSignal, wc);
 
 
-            _oldShiftValue = IsShift;
+            _oldIsFullSpectrumValue = IsFullSpectrum;
             if (IsFFT)
             {
                 FFT fft = new();
-                fft.Initialize(lengthSample, zeros, fullFrequencyData: IsShift);
+                fft.Initialize(lengthSample, zeros, fullFrequencyData: IsFullSpectrum);
                 _cSpectrum = fft.Execute(windowedTimeSeries);
-                _cSpectrum = fft.ShiftData(_cSpectrum, IsShift);
+
+                _cSpectrumCopyBeforeShift = _cSpectrum;
+                _cSpectrum = fft.ShiftData(_cSpectrum, IsFullSpectrum, IsCopyNyquist);
 
                 _freqSpan = fft.FrequencySpan(samplingRate);
             }
@@ -367,10 +394,12 @@ namespace Wpf_FFT.MVVM
                 // Initialize the DFT
                 // You only need to do this once or if you change any of the DFT parameters.
 
-                dft.Initialize(lengthSample, zeros, fullFrequency: IsShift);
+                dft.Initialize(lengthSample, zeros, fullFrequency: IsFullSpectrum);
                 // Call the DFT and get the scaled spectrum back
                 _cSpectrum = dft.Execute(windowedTimeSeries);
-                _cSpectrum = dft.ShiftData(_cSpectrum, IsShift);
+                _cSpectrumCopyBeforeShift = _cSpectrum;
+
+                _cSpectrum = dft.ShiftData(_cSpectrum, IsFullSpectrum, IsCopyNyquist);
                 // For plotting on an XY Scatter plot, generate the X Axis frequency Span
                 _freqSpan = dft.FrequencySpan(samplingRate);
             }
@@ -395,7 +424,7 @@ namespace Wpf_FFT.MVVM
 
 
             // XAxe = ChartHelper.GetXAxisLabelForFrequencyCart(freqSpan);
-            SeriesFrequency = ChartHelper.GetSeriesFrequency(lmSpectrum, _freqSpan, IsShift);
+            SeriesFrequency = ChartHelper.GetSeriesFrequency(lmSpectrum, _freqSpan, IsFullSpectrum);
 
             // ((LineSeries<DataModel>)SeriesFrequency[0]).GeometryFill.StrokeThickness = 0.5f;
 
@@ -495,13 +524,13 @@ namespace Wpf_FFT.MVVM
 
         });
 
-        public ICommand ShiftCommand => new ActionCommand((o) => { }, (o) => true);
+        public ICommand FullSpectrumCommand => new ActionCommand((o) => { }, (o) => true);
         public ICommand MagnitudeCommand => new ActionCommand((o) =>
         {
             if (_cSpectrum == null) return;
 
             double[] lmSpectrum = DSP.ConvertComplex.ToMagnitude(_cSpectrum);
-            SeriesFrequency = ChartHelper.GetSeriesFrequency(lmSpectrum, _freqSpan, _oldShiftValue);
+            SeriesFrequency = ChartHelper.GetSeriesFrequency(lmSpectrum, _freqSpan, _oldIsFullSpectrumValue);
 
         }, (o) => true);
         public ICommand MagnitudeDBVCommand => new ActionCommand((o) =>
@@ -509,21 +538,21 @@ namespace Wpf_FFT.MVVM
             if (_cSpectrum == null) return;
 
             double[] lmSpectrum = DSP.ConvertComplex.ToMagnitudeDBV(_cSpectrum);
-            SeriesFrequency = ChartHelper.GetSeriesFrequency(lmSpectrum, _freqSpan, _oldShiftValue);
+            SeriesFrequency = ChartHelper.GetSeriesFrequency(lmSpectrum, _freqSpan, _oldIsFullSpectrumValue);
 
         }, (o) => true);
         public ICommand ImaginaryCommand => new ActionCommand((o) =>
         {
             if (_cSpectrum == null) return;
             double[] lmSpectrum = _cSpectrum.ToList().Select(a => a.Imaginary).ToArray();
-            SeriesFrequency = ChartHelper.GetSeriesFrequency(lmSpectrum, _freqSpan, _oldShiftValue);
+            SeriesFrequency = ChartHelper.GetSeriesFrequency(lmSpectrum, _freqSpan, _oldIsFullSpectrumValue);
         }, (o) => true);
         public ICommand RealCommand => new ActionCommand((o) =>
         {
             if (_cSpectrum == null) return;
 
             double[] lmSpectrum = _cSpectrum.ToList().Select(a => a.Real).ToArray();
-            SeriesFrequency = ChartHelper.GetSeriesFrequency(lmSpectrum, _freqSpan, _oldShiftValue);
+            SeriesFrequency = ChartHelper.GetSeriesFrequency(lmSpectrum, _freqSpan, _oldIsFullSpectrumValue);
         }, (o) => true);
         public ICommand PhaseCommand => new ActionCommand((o) =>
         {
@@ -531,7 +560,18 @@ namespace Wpf_FFT.MVVM
 
             //double[] lmSpectrum = _cSpectrum.ToList().Select(a => a.Phase).ToArray();
             double[] lmSpectrum = DSP.ConvertComplex.ToPhaseRadians(_cSpectrum);
-            SeriesFrequency = ChartHelper.GetSeriesFrequency(lmSpectrum, _freqSpan, _oldShiftValue);
+            SeriesFrequency = ChartHelper.GetSeriesFrequency(lmSpectrum, _freqSpan, _oldIsFullSpectrumValue);
+        }, (o) => true);
+
+        public ICommand BinsCommand => new ActionCommand((o) =>
+        {
+            if (_cSpectrum == null) return;
+
+
+            double[] lmSpectrum = DSP.ConvertComplex.ToMagnitude(_cSpectrumCopyBeforeShift);
+
+            SeriesFrequency = ChartHelper.GetBins(lmSpectrum);
+
         }, (o) => true);
 
         public ICommand AboutCommand => new ActionCommand((o) =>

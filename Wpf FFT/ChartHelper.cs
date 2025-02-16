@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Wpf_FFT.MVVM;
+using static SkiaSharp.HarfBuzz.SKShaper;
 
 namespace Wpf_FFT
 {
@@ -60,11 +61,21 @@ namespace Wpf_FFT
                 }
                 else
                 {
+                    if (lmSpectrum.Length % 2 == 0)
+                    {
 
-                    if (i < lmSpectrum.Length / 2)
-                        listOfFrequecyPoints.Add(new DataModel { Second = -(float)(freqSpan[lmSpectrum.Length / 2 - i]), Value = lmSpectrum[i] });
+                        if (i < lmSpectrum.Length / 2 - 1)
+                            listOfFrequecyPoints.Add(new DataModel { Second = -(float)(freqSpan[lmSpectrum.Length / 2 - i - 1]), Value = lmSpectrum[i] });
+                        else
+                            listOfFrequecyPoints.Add(new DataModel { Second = (float)freqSpan[i - (lmSpectrum.Length / 2) + 1], Value = lmSpectrum[i] });
+                    }
                     else
-                        listOfFrequecyPoints.Add(new DataModel { Second = (float)freqSpan[i - (lmSpectrum.Length / 2)], Value = lmSpectrum[i] });
+                    {
+                        if (i < lmSpectrum.Length / 2)
+                            listOfFrequecyPoints.Add(new DataModel { Second = -(float)(freqSpan[lmSpectrum.Length / 2 - i]), Value = lmSpectrum[i] });
+                        else
+                            listOfFrequecyPoints.Add(new DataModel { Second = (float)freqSpan[i - (lmSpectrum.Length / 2)], Value = lmSpectrum[i] });
+                    }
                 }
 
 
@@ -131,6 +142,43 @@ namespace Wpf_FFT
 
                   }
             };
+        }
+
+        public static List<ISeries> GetBins(double[] lmSpectrum)
+        {
+
+            var listOfFrequecyPoints = GetListOfBins(lmSpectrum);
+
+            return new List<ISeries>{
+                  new ColumnSeries<DataModel>()
+                  {
+                        Values = listOfFrequecyPoints,
+                        Fill = null,
+                        //Stroke = new SolidColorPaintTask(SKColors.DarkOliveGreen, 1),
+                        Stroke = new SolidColorPaint(SKColors.DarkOliveGreen, 1),
+                        MaxBarWidth = 1,
+                       // Name="Val:",
+                        //Mapping=(model, i)=>{ }
+                        YToolTipLabelFormatter=(chartPoint) => $"Val:\xa0{chartPoint.Model.Value} Bin:\xa0{chartPoint.Model.Second}",
+                  }
+            };
+        }
+
+        static List<DataModel> GetListOfBins(double[] inputSignal)
+        {
+
+            List<DataModel> listOfTimePoints = new();
+
+            for (int i = 0; i < inputSignal.Length; i++)
+            {
+                listOfTimePoints.Add(
+
+                    new DataModel { Second = i, Value = inputSignal[i] }
+
+                    );
+            }
+
+            return listOfTimePoints;
         }
     }
 }
