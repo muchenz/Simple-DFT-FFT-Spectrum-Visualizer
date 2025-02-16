@@ -20,58 +20,118 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace LiveChartsCore.Measure
+namespace LiveChartsCore.Measure;
+
+/// <summary>
+/// Represents the maximum and minimum values in a set.
+/// </summary>
+public class Bounds
 {
     /// <summary>
-    /// Represents the maximum and minimum values in a set.
+    /// Creates a new instance of the <see cref="Bounds"/> class.
     /// </summary>
-    public class Bounds
+    public Bounds()
+    { }
+
+    /// <summary>
+    /// Creates a new instance of the <see cref="Bounds"/> class.
+    /// </summary>
+    /// <param name="max">The maximum value.</param>
+    /// <param name="min">The minimum value.</param>
+    public Bounds(double min, double max)
     {
-        /// <summary>
-        /// Creates a new instance of the <see cref="Bounds"/> class.
-        /// </summary>
-        public Bounds()
-        {
+        Max = max;
+        Min = min;
+    }
 
-        }
+    /// <summary>
+    /// Creates a new instance of the <see cref="Bounds"/> class. based on the given <see cref="Bounds"/>.
+    /// </summary>
+    /// <param name="bounds"></param>
+    public Bounds(Bounds bounds)
+    {
+        IsEmpty = bounds.IsEmpty;
+        Max = bounds.Max;
+        Min = bounds.Min;
+        PaddingMax = bounds.PaddingMax;
+        PaddingMin = bounds.PaddingMin;
+        RequestedGeometrySize = bounds.RequestedGeometrySize;
+        MinDelta = bounds.MinDelta;
+    }
 
-        /// <summary>
-        /// Gets or sets the maximum value in the data set.
-        /// </summary>
-        public double Max { get; set; } = float.MinValue;
+    /// <summary>
+    /// Gets whether the bounds are empty.
+    /// </summary>
+    public bool IsEmpty { get; internal set; } = true;
 
-        /// <summary>
-        /// Gets or sets the minimum value in the data set.
-        /// </summary>
-        public double Min { get; set; } = float.MaxValue;
+    /// <summary>
+    /// Gets the maximum value in the data set.
+    /// </summary>
+    public double Max { get; internal set; } = double.MinValue;
 
-        /// <summary>
-        /// Gets the delta, the absolute range in the axis.
-        /// </summary>
-        /// <value>
-        /// The delta.
-        /// </value>
-        public double Delta => Max - Min;
+    /// <summary>
+    /// Gets the minimum value in the data set.
+    /// </summary>
+    public double Min { get; internal set; } = double.MaxValue;
 
-        /// <summary>
-        /// Gets or sets the minimum delta.
-        /// </summary>
-        /// <value>
-        /// The minimum delta.
-        /// </value>
-        public double MinDelta { get; set; }
+    /// <summary>
+    /// Gets the padding, the distance from the edge to the first point in the series.
+    /// </summary>
+    public double PaddingMax { get; internal set; } = 0;
 
-        /// <summary>
-        /// Compares the current bounds with a given value,
-        /// if the given value is greater than the current instance <see cref="Max"/> property then the given value is set at <see cref="Max"/> property,
-        /// if the given value is less than the current instance <see cref="Min"/> property then the given value is set at <see cref="Min"/> property.
-        /// </summary>
-        /// <param name="value">the value to append</param>
-        /// <returns>Whether the value affected the current bounds, true if it affected, false if did not.</returns>
-        public void AppendValue(double value)
-        {
-            if (Max <= value) Max = value;
-            if (Min >= value) Min = value;
-        }
+    /// <summary>
+    /// Gets the padding, the distance from the edge to the last point in the series.
+    /// </summary>
+    public double PaddingMin { get; internal set; } = 0;
+
+    /// <summary>
+    /// Gets the requested geometry size.
+    /// </summary>
+    public double RequestedGeometrySize { get; internal set; } = 0;
+
+    /// <summary>
+    /// Gets the delta, the absolute range in the axis.
+    /// </summary>
+    /// <value>
+    /// The delta.
+    /// </value>
+    public double Delta => Max - Min;
+
+    /// <summary>
+    /// Gets the minimum delta.
+    /// </summary>
+    /// <value>
+    /// The minimum delta.
+    /// </value>
+    public double MinDelta { get; internal set; } = double.MaxValue;
+
+    /// <summary>
+    /// Compares the current bounds with a given value,
+    /// if the given value is greater than the current instance <see cref="Max"/> property then the given value is set at <see cref="Max"/> property,
+    /// if the given value is less than the current instance <see cref="Min"/> property then the given value is set at <see cref="Min"/> property.
+    /// </summary>
+    /// <param name="value">the value to append</param>
+    internal void AppendValue(double value)
+    {
+        if (Max <= value) Max = value;
+        if (Min >= value) Min = value;
+        IsEmpty = false;
+    }
+
+    /// <summary>
+    /// Compares the current bounds with a given value,
+    /// if the given value is greater than the current instance <see cref="Max"/> property then the given value is set at <see cref="Max"/> property,
+    /// if the given value is less than the current instance <see cref="Min"/> property then the given value is set at <see cref="Min"/> property.
+    /// </summary>
+    /// <param name="bounds">the bounds to append</param>
+    internal void AppendValue(Bounds bounds)
+    {
+        if (Max < bounds.Max) Max = bounds.Max;
+        if (Min > bounds.Min) Min = bounds.Min;
+        if (bounds.MinDelta < MinDelta) MinDelta = bounds.MinDelta;
+        if (RequestedGeometrySize < bounds.RequestedGeometrySize) RequestedGeometrySize = bounds.RequestedGeometrySize;
+        if (PaddingMin < bounds.PaddingMin) PaddingMin = bounds.PaddingMin;
+        if (PaddingMax < bounds.PaddingMax) PaddingMax = bounds.PaddingMax;
+        IsEmpty = false;
     }
 }

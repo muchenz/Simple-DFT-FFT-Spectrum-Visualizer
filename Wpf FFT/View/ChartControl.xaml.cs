@@ -1,5 +1,6 @@
 ﻿using LiveChartsCore;
 using LiveChartsCore.Kernel;
+using LiveChartsCore.Kernel.Sketches;
 using LiveChartsCore.SkiaSharpView;
 using System;
 using System.Collections.Generic;
@@ -35,19 +36,19 @@ namespace Wpf_FFT.View
                  }
             };
 
-            XAxe = (new List<IAxis> { new Axis { } }).Cast<IAxis>().ToList();
+            XAxe = (new List<Axis> { new Axis { } });
         }
 
 
-        public IEnumerable<IAxis> XAxe
+        public IEnumerable<Axis> XAxe
         {
-            get { return (IEnumerable<IAxis>)GetValue(XAxeProperty); }
+            get { return (IEnumerable<Axis>)GetValue(XAxeProperty); }
             set { SetValue(XAxeProperty, value); }
         }
 
         // Using a DependencyProperty as the backing store for XAxe.  This enables animation, styling, binding, etc...
         public static readonly DependencyProperty XAxeProperty =
-            DependencyProperty.Register("XAxe", typeof(IEnumerable<IAxis>), typeof(ChartControl), new PropertyMetadata(default(IEnumerable<IAxis>)));
+            DependencyProperty.Register("XAxe", typeof(IEnumerable<Axis>), typeof(ChartControl), new PropertyMetadata(default(IEnumerable<Axis>)));
 
 
         public IEnumerable<ISeries> Series

@@ -1,6 +1,7 @@
 ﻿using LiveChartsCore;
 using LiveChartsCore.SkiaSharpView;
 using LiveChartsCore.SkiaSharpView.Painting;
+using LiveChartsCore.SkiaSharpView.WPF;
 using SkiaSharp;
 using System;
 using System.Collections.Generic;
@@ -14,9 +15,9 @@ namespace Wpf_FFT
     public class ChartHelper
     {
 
-        public static List<Axis> GetXAxisLabelForFrequencyCart(double [] freqSpan)
+        public static List<Axis> GetXAxisLabelForFrequencyCart(double[] freqSpan)
 
-            {
+        {
             var listOfLabels = freqSpan.ToList().Select(a => a.ToString("#.#")).ToList();
 
             return (new List<Axis>
@@ -39,8 +40,15 @@ namespace Wpf_FFT
             });
         }
 
-        static List<DataModel> GetListOfFrequecyPoints(double[] lmSpectrum, double [] freqSpan, bool isShift)
+        static List<DataModel> GetListOfFrequecyPoints(double[] lmSpectrum, double[] freqSpan, bool isShift)
         {
+
+            //if (lmSpectrum.Length % 2 != 0)
+            //{
+            //    var list = lmSpectrum.ToList();
+            //    list.RemoveAt(lmSpectrum.Length / 2);
+            //    lmSpectrum = list.ToArray();
+            //}
 
             List<DataModel> listOfFrequecyPoints = new();
 
@@ -49,15 +57,17 @@ namespace Wpf_FFT
                 if (!isShift)
                 {
                     listOfFrequecyPoints.Add(new DataModel { Second = (float)freqSpan[i], Value = lmSpectrum[i] });
-                }else
-                {
-                    if (i < lmSpectrum.Length / 2)
-                        listOfFrequecyPoints.Add(new DataModel { Second = -(float)(freqSpan[lmSpectrum.Length/2 - i]), Value = lmSpectrum[i] });
-                    else
-                        listOfFrequecyPoints.Add(new DataModel { Second = (float)freqSpan[i - (lmSpectrum.Length/2) ], Value= lmSpectrum[i] });
-
-
                 }
+                else
+                {
+
+                    if (i < lmSpectrum.Length / 2)
+                        listOfFrequecyPoints.Add(new DataModel { Second = -(float)(freqSpan[lmSpectrum.Length / 2 - i]), Value = lmSpectrum[i] });
+                    else
+                        listOfFrequecyPoints.Add(new DataModel { Second = (float)freqSpan[i - (lmSpectrum.Length / 2)], Value = lmSpectrum[i] });
+                }
+
+
             }
 
             return listOfFrequecyPoints;
@@ -74,10 +84,14 @@ namespace Wpf_FFT
                   {
                         Values = listOfFrequecyPoints,
                         Fill = null,
-                        GeometrySize = 2,
-                        Stroke = new SolidColorPaintTask(SKColors.DarkOliveGreen, 1),
+                        GeometrySize = 0.2,
+                        //Stroke = new SolidColorPaintTask(SKColors.DarkOliveGreen, 1),
+                        Stroke = new SolidColorPaint(SKColors.DarkOliveGreen, 1),
+
                         LineSmoothness = 0,
-                        Name="Val:",
+                       // Name="Val:",
+                        //Mapping=(model, i)=>{ }
+                        YToolTipLabelFormatter=(chartPoint) => $"Val:\xa0{chartPoint.Model.Value} Frequency:\xa0{chartPoint.Model.Second}",
                   }
             };
         }
@@ -87,7 +101,7 @@ namespace Wpf_FFT
 
             List<DataModel> listOfTimePoints = new();
 
-            for (int i = 0; i < inputSignal.Length ; i++)
+            for (int i = 0; i < inputSignal.Length; i++)
             {
                 listOfTimePoints.Add(
 
@@ -109,10 +123,11 @@ namespace Wpf_FFT
                   {
                         Values = listOfTimePoints,
                         Fill = null,
-                        GeometrySize = 2,
-                        Stroke = new SolidColorPaintTask(SKColors.DarkOliveGreen, 1),
+                        GeometrySize = 0.2,
+                        Stroke = new SolidColorPaint(SKColors.DarkOliveGreen, 1),
                         LineSmoothness = 0,
-                        Name="Val: ",
+                        //Name="Val: ",
+                       YToolTipLabelFormatter=(chartPoint) => $"Val:\xa0{chartPoint.Model.Value} Time:\xa0{chartPoint.Model.Second}",
 
                   }
             };

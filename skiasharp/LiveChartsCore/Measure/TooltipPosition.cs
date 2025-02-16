@@ -20,41 +20,49 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace LiveChartsCore.Measure
+namespace LiveChartsCore.Measure;
+
+/// <summary>
+/// Defines the tool tip position.
+/// </summary>
+public enum TooltipPosition
 {
     /// <summary>
-    /// Defines the tool tip position.
+    /// The hidden position, tool tips will be hidden.
     /// </summary>
-    public enum TooltipPosition
-    {
-        /// <summary>
-        /// The hidden position, tool tips will be hidden.
-        /// </summary>
-        Hidden,
+    Hidden,
 
-        /// <summary>
-        /// The top position, places the tool tip at the top of the hovered point.
-        /// </summary>
-        Top,
+    /// <summary>
+    /// Places the tool tip based on the space available.
+    /// </summary>
+    Auto,
 
-        /// <summary>
-        /// The bottom position, places the tool tip at the bottom of the hovered point.
-        /// </summary>
-        Bottom,
+    /// <summary>
+    /// The top position, places the tool tip at the top of the hovered point,
+    /// if there is not enough space, the library will place it in another position.
+    /// </summary>
+    Top,
 
-        /// <summary>
-        /// The left position, places the tool tip at the left of the hovered point.
-        /// </summary>
-        Left,
+    /// <summary>
+    /// The bottom position, places the tool tip at the bottom of the hovered point,
+    /// if there is not enough space, the library will place it in another position.
+    /// </summary>
+    Bottom,
 
-        /// <summary>
-        /// The right position, places the tool tip at the right of the hovered point.
-        /// </summary>
-        Right,
+    /// <summary>
+    /// The left position, places the tool tip at the left of the hovered point.
+    /// if there is not enough space, the library will place it in another position.
+    /// </summary>
+    Left,
 
-        /// <summary>
-        /// The center position, places the tool tip at the center of the hovered point.
-        /// </summary>
-        Center
-    }
+    /// <summary>
+    /// The right position, places the tool tip at the right of the hovered point.
+    /// if there is not enough space, the library will place it in another position.
+    /// </summary>
+    Right,
+
+    /// <summary>
+    /// The center position, places the tool tip at the center of the hovered point.
+    /// </summary>
+    Center
 }

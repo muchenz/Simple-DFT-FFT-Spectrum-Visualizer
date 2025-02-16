@@ -27,9 +27,11 @@ namespace Wpf_FFT.View
     /// </summary>
     public partial class MainWindow : Window
     {
-     
+
         public MainWindow(MainWindowVM mainWindowVM)
         {
+            //SetProcessDpiAwareness(_Process_DPI_Awareness.Process_DPI_Unaware);
+
             InitializeComponent();
             DataContext = mainWindowVM;
         }
@@ -56,10 +58,20 @@ namespace Wpf_FFT.View
 
             var windowsScalingFactor = xDPI / 96.0;
 
-            var fixingFactor = 1.01 + ((windowsScalingFactor-1) * 0.78);
+            var fixingFactor = 1.01 + ((windowsScalingFactor - 1) * 0.78);
 
-            ColumnMainWindow1.Width = new GridLength(sizeInfo.NewSize.Width * fixingFactor - ColumnMainWindow0.Width.Value);
+            //ColumnMainWindow1.Width = new GridLength(sizeInfo.NewSize.Width * fixingFactor - ColumnMainWindow0.Width.Value);
 
+        }
+
+        [DllImport("shcore.dll")]
+        private static extern int SetProcessDpiAwareness(_Process_DPI_Awareness value);
+
+        private enum _Process_DPI_Awareness
+        {
+            Process_DPI_Unaware = 0,
+            Process_System_DPI_Aware = 1,
+            Process_Per_Monitor_DPI_Aware = 2
         }
     }
 }

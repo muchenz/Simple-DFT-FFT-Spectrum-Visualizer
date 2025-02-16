@@ -1,16 +1,52 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <Nullable>enable</Nullable>
-    <LangVersion>9.0</LangVersion>
-    <TargetFramework>net5.0</TargetFramework>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>11.0</LangVersion>
+
+    <TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
+
     <AssemblyName>LiveChartsCore</AssemblyName>
     <RootNamespace>LiveChartsCore</RootNamespace>
+    <Version>2.0.0-rc2</Version>
+    <PackageIcon>icon.png</PackageIcon>
+    <Description>Simple, flexible, interactive and powerful data visualization for .Net, this is the core package probably you need another package also unless you are building your own backed.</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Authors>BetoRodriguez</Authors>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <RepositoryUrl>https://github.com/beto-rodriguez/LiveCharts2</RepositoryUrl>
+	  
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DocumentationFile>../../docs/LiveChartsCore.xml</DocumentationFile>
+  <PropertyGroup>
+    <CheckEolTargetFramework>false</CheckEolTargetFramework>
   </PropertyGroup>
+
+  <PropertyGroup>
+    <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <SignAssembly>False</SignAssembly>
+    <DelaySign>True</DelaySign>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Geo\world-robinson.geojson" />
+    <None Remove="Geo\world.geojson" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Geo\world.geojson">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="images\icon.png" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Condition="'$(TargetFramework)' == 'net462' OR '$(TargetFramework)' == 'netstandard2.0' OR '$(TargetFramework)' == 'netcoreapp2.0'" Include="Newtonsoft.Json" Version="13.0.2" />
+  </ItemGroup>
 
 </Project>

@@ -10,7 +10,9 @@
         xmlns:ctx="clr-namespace:LiveChartsCore.Kernel;assembly=LiveChartsCore"
         mc:Ignorable="d"
         Title="Simple DFT/FFT Spectrum Visualizer" Height="auto" Width="auto" WindowState="Maximized" FontSize="18"
-        d:DataContext="{d:DesignInstance Type=vm:MainWindowVM, IsDesignTimeCreatable=True}">
+        >
+
+    <!--d:DataContext="{d:DesignInstance Type=vm:MainWindowVM, IsDesignTimeCreatable=True}">-->
     <Window.Resources>
         <Style TargetType="Label" x:Key="ExampleLabelStyle">
             <Setter Property="FontSize" Value="14"/>
@@ -33,12 +35,26 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
+            <!--<lvc:CartesianChart
+            Series="{Binding Path=SeriesTime , Mode=TwoWay}"
+           ZoomMode="X"
+           XAxes="{Binding Path=XAxe}"
+             
+            TooltipPosition="Left"
+            TooltipTextSize="14">
+            </lvc:CartesianChart>-->
+
+            <!--TooltipBackgroundPaint="{Binding TooltipBackgroundPaint}"
+            TooltipTextPaint="{Binding TooltipTextPaint}"-->
+
             <local:ChartControl Series="{Binding Path=SeriesTime , Mode=TwoWay}"
                                    XAxe="{Binding Path=XAxe2}" XTipName="Time: " />
 
+            <local:ChartControl Grid.Row="1"  Series="{Binding Path=SeriesFrequency , Mode=TwoWay}"
+                       XAxe="{Binding Path=XAxe}" XTipName="Freq: " />
 
-            <local:ChartControl Grid.Row="1" Series="{Binding Path=SeriesFrequency , Mode=TwoWay}"
-                                   XAxe="{Binding Path=XAxe}" XTipName="Freq: " />
+            <!--<local:ChartControl Grid.Row="1" Series="{Binding Path=SeriesFrequency , Mode=TwoWay}"
+                                   XAxe="{Binding Path=XAxe}" XTipName="Freq: " />-->
 
         </Grid>
         <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
@@ -158,6 +174,10 @@
                             <StackPanel Orientation="Horizontal">
                                 <Label Content="Impulse of sine: " Width="200" Style="{StaticResource ExampleLabelStyle}"></Label>
                                 <Button Width="50" Command="{Binding ImpulseOfSine}" Style="{StaticResource ExampleButtonStyle}">Set</Button>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <Label Content="Impulse train: " Width="200" Style="{StaticResource ExampleLabelStyle}"></Label>
+                                <Button Width="50" Command="{Binding ImpulseTrain}" Style="{StaticResource ExampleButtonStyle}">Set</Button>
                             </StackPanel>
                             <StackPanel Orientation="Horizontal">
                                 <Label Content="Sine plus noise: " Width="200" Style="{StaticResource ExampleLabelStyle}"></Label>

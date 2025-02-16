@@ -33,7 +33,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Parser\Parser.csproj" />
-    <ProjectReference Include="..\skiasharp\LiveChartsCore.SkiaSharp.WPF\LiveChartsCore.SkiaSharpView.WPF.csproj" />
+    <ProjectReference Include="..\skiasharp\skiasharp\LiveChartsCore.SkiaSharp.WPF\LiveChartsCore.SkiaSharpView.WPF.csproj" />
   </ItemGroup>
 
 </Project>

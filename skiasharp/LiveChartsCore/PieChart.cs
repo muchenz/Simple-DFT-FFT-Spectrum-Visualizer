@@ -20,240 +20,242 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using LiveChartsCore.Kernel;
-using LiveChartsCore.Drawing;
 using System;
 using System.Collections.Generic;
-using System.Drawing;
+using System.Diagnostics;
 using System.Linq;
+using LiveChartsCore.Drawing;
+using LiveChartsCore.Kernel;
+using LiveChartsCore.Kernel.Sketches;
 using LiveChartsCore.Measure;
+using LiveChartsCore.Motion;
 
-namespace LiveChartsCore
+namespace LiveChartsCore;
+
+/// <summary>
+/// Defines a pie chart.
+/// </summary>
+/// <typeparam name="TDrawingContext">The type of the drawing context.</typeparam>
+/// <seealso cref="Chart{TDrawingContext}" />
+public class PieChart<TDrawingContext> : Chart<TDrawingContext>
+    where TDrawingContext : DrawingContext
 {
+    private readonly IPieChartView<TDrawingContext> _chartView;
+    private int _nextSeries = 0;
+
     /// <summary>
-    /// Defines a pie chart.
+    /// Initializes a new instance of the <see cref="PieChart{TDrawingContext}"/> class.
     /// </summary>
-    /// <typeparam name="TDrawingContext">The type of the drawing context.</typeparam>
-    /// <seealso cref="Chart{TDrawingContext}" />
-    public class PieChart<TDrawingContext> : Chart<TDrawingContext>
-        where TDrawingContext : DrawingContext
+    /// <param name="view">The view.</param>
+    /// <param name="defaultPlatformConfig">The default platform configuration.</param>
+    /// <param name="canvas">The canvas.</param>
+    /// <param name="requiresLegendMeasureAlways">Forces the legends to redraw with every measure request.</param>
+    public PieChart(
+        IPieChartView<TDrawingContext> view,
+        Action<LiveChartsSettings> defaultPlatformConfig,
+        MotionCanvas<TDrawingContext> canvas,
+        bool requiresLegendMeasureAlways = false)
+        : base(canvas, defaultPlatformConfig, view)
     {
-        private readonly HashSet<ISeries> _everMeasuredSeries = new();
-        private readonly IPieChartView<TDrawingContext> _chartView;
-        private int _nextSeries = 0;
+        _chartView = view;
+    }
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="PieChart{TDrawingContext}"/> class.
-        /// </summary>
-        /// <param name="view">The view.</param>
-        /// <param name="defaultPlatformConfig">The default platform configuration.</param>
-        /// <param name="canvas">The canvas.</param>
-        public PieChart(
-            IPieChartView<TDrawingContext> view,
-            Action<LiveChartsSettings> defaultPlatformConfig,
-            MotionCanvas<TDrawingContext> canvas)
-            : base(canvas, defaultPlatformConfig)
+    ///<inheritdoc cref="Chart{TDrawingContext}.Series"/>
+    public override IEnumerable<IChartSeries<TDrawingContext>> Series =>
+        _chartView.Series.Cast<IChartSeries<TDrawingContext>>();
+
+    ///<inheritdoc cref="Chart{TDrawingContext}.VisibleSeries"/>
+    public override IEnumerable<IChartSeries<TDrawingContext>> VisibleSeries =>
+        Series.Where(x => x.IsVisible);
+
+    /// <summary>
+    /// Gets the view.
+    /// </summary>
+    /// <value>
+    /// The view.
+    /// </value>
+    public override IChartView<TDrawingContext> View => _chartView;
+
+    /// <summary>
+    /// Gets the value bounds.
+    /// </summary>
+    /// <value>
+    /// The value bounds.
+    /// </value>
+    public Bounds ValueBounds { get; private set; } = new();
+
+    /// <summary>
+    /// Gets the index bounds.
+    /// </summary>
+    /// <value>
+    /// The index bounds.
+    /// </value>
+    public Bounds IndexBounds { get; private set; } = new();
+
+    /// <summary>
+    /// Gets the pushout bounds.
+    /// </summary>
+    /// <value>
+    /// The pushout bounds.
+    /// </value>
+    public Bounds PushoutBounds { get; private set; } = new();
+
+    /// <summary>
+    /// Finds the points near to the specified point.
+    /// </summary>
+    /// <param name="pointerPosition">The pointer position.</param>
+    /// <returns></returns>
+    public override IEnumerable<ChartPoint> FindHoveredPointsBy(LvcPoint pointerPosition)
+    {
+        return _chartView.Series
+            .Where(series => (series is IPieSeries<TDrawingContext> pieSeries) && !pieSeries.IsFillSeries)
+            .Where(series => series.IsHoverable)
+            .SelectMany(series => series.FindHitPoints(this, pointerPosition, TooltipFindingStrategy.CompareAll));
+    }
+
+    /// <summary>
+    /// Measures this chart.
+    /// </summary>
+    /// <returns></returns>
+    protected internal override void Measure()
+    {
+#if DEBUG
+        if (LiveCharts.EnableLogging)
         {
-            _chartView = view;
+            Trace.WriteLine(
+                $"[Cartesian chart measured]".PadRight(60) +
+                $"tread: {Environment.CurrentManagedThreadId}");
+        }
+#endif
 
-            view.PointStates.Chart = this;
-            foreach (var item in view.PointStates.GetStates())
-            {
-                if (item.Fill != null)
-                {
-                    item.Fill.ZIndex += 1000000;
-                    canvas.AddDrawableTask(item.Fill);
-                }
-                if (item.Stroke != null)
-                {
-                    item.Stroke.ZIndex += 1000000;
-                    canvas.AddDrawableTask(item.Stroke);
-                }
-            }
+        if (!IsLoaded) return; // <- prevents a visual glitch where the visual call the measure method
+                               // while they are not visible, the problem is when the control is visible again
+                               // the animations are not as expected because previously it ran in an invalid case.
+
+        InvokeOnMeasuring();
+
+        if (_preserveFirstDraw)
+        {
+            _isFirstDraw = true;
+            _preserveFirstDraw = false;
         }
 
-        /// <summary>
-        /// Gets the series.
-        /// </summary>
-        /// <value>
-        /// The series.
-        /// </value>
-        public IPieSeries<TDrawingContext>[] Series { get; private set; } = new IPieSeries<TDrawingContext>[0];
+        MeasureWork = new object();
 
-        /// <summary>
-        /// Gets the drawable series.
-        /// </summary>
-        /// <value>
-        /// The drawable series.
-        /// </value>
-        public override IEnumerable<IDrawableSeries<TDrawingContext>> DrawableSeries => Series;
+        var viewDrawMargin = _chartView.DrawMargin;
+        ControlSize = _chartView.ControlSize;
 
-        /// <summary>
-        /// Gets the view.
-        /// </summary>
-        /// <value>
-        /// The view.
-        /// </value>
-        public override IChartView<TDrawingContext> View => _chartView;
+        VisualElements = _chartView.VisualElements ?? Array.Empty<ChartElement<TDrawingContext>>();
 
-        /// <summary>
-        /// Gets the value bounds.
-        /// </summary>
-        /// <value>
-        /// The value bounds.
-        /// </value>
-        public Bounds ValueBounds { get; private set; } = new Bounds();
+        LegendPosition = _chartView.LegendPosition;
+        Legend = _chartView.Legend;
 
-        /// <summary>
-        /// Gets the index bounds.
-        /// </summary>
-        /// <value>
-        /// The index bounds.
-        /// </value>
-        public Bounds IndexBounds { get; private set; } = new Bounds();
+        TooltipPosition = _chartView.TooltipPosition;
+        Tooltip = _chartView.Tooltip;
 
-        /// <summary>
-        /// Gets the pushout bounds.
-        /// </summary>
-        /// <value>
-        /// The pushout bounds.
-        /// </value>
-        public Bounds PushoutBounds { get; private set; } = new Bounds();
+        AnimationsSpeed = _chartView.AnimationsSpeed;
+        EasingFunction = _chartView.EasingFunction;
 
-        /// <summary>
-        /// Finds the points near to the specified point.
-        /// </summary>
-        /// <param name="pointerPosition">The pointer position.</param>
-        /// <returns></returns>
-        public override IEnumerable<TooltipPoint> FindPointsNearTo(PointF pointerPosition)
+        SeriesContext = new SeriesContext<TDrawingContext>(VisibleSeries, this);
+        var isNewTheme = LiveCharts.DefaultSettings.CurrentThemeId != ThemeId;
+
+        var theme = LiveCharts.DefaultSettings.GetTheme<TDrawingContext>();
+
+        ValueBounds = new Bounds();
+        IndexBounds = new Bounds();
+        PushoutBounds = new Bounds();
+
+        foreach (var series in VisibleSeries.Cast<IPieSeries<TDrawingContext>>())
         {
-            return _chartView.Series.SelectMany(series => series.FindPointsNearTo(this, pointerPosition));
-        }
+            if (series.SeriesId == -1) series.SeriesId = _nextSeries++;
 
-        /// <inheritdoc cref="IChart.Update(ChartUpdateParams?)" />
-        public override void Update(ChartUpdateParams? chartUpdateParams = null)
-        {
-            if (chartUpdateParams == null) chartUpdateParams = new ChartUpdateParams();
-
-            if (chartUpdateParams.IsAutomaticUpdate && !View.AutoUpdateEnaled) return;
-
-            if (!chartUpdateParams.Throttling)
+            var ce = (ChartElement<TDrawingContext>)series;
+            ce._isInternalSet = true;
+            if (!ce._isThemeSet || isNewTheme)
             {
-                updateThrottler.ForceCall();
-                return;
-            }
-
-            updateThrottler.Call();
-        }
-
-        /// <summary>
-        /// Measures this chart.
-        /// </summary>
-        /// <returns></returns>
-        protected override void Measure()
-        {
-            lock (canvas.Sync)
-            {
-                InvokeOnMeasuring();
-
-                MeasureWork = new object();
-
-                viewDrawMargin = _chartView.DrawMargin;
-                controlSize = _chartView.ControlSize;
-
-                Series = _chartView.Series
-                    .Where(x => x.IsVisible)
-                    .Cast<IPieSeries<TDrawingContext>>()
-                    .Select(series =>
-                    {
-                        _ = series.Fetch(this);
-                        return series;
-                    }).ToArray();
-
-                legendPosition = _chartView.LegendPosition;
-                legendOrientation = _chartView.LegendOrientation;
-                legend = _chartView.Legend;
-
-                tooltipPosition = _chartView.TooltipPosition;
-                tooltipFindingStrategy = _chartView.TooltipFindingStrategy;
-                tooltip = _chartView.Tooltip;
-
-                animationsSpeed = _chartView.AnimationsSpeed;
-                easingFunction = _chartView.EasingFunction;
-
-                seriesContext = new SeriesContext<TDrawingContext>(Series);
-
-                if (legend != null) legend.Draw(this);
-
-                var theme = LiveCharts.CurrentSettings.GetTheme<TDrawingContext>();
-                if (theme.CurrentColors == null || theme.CurrentColors.Length == 0)
-                    throw new Exception("Default colors are not valid");
-
-                ValueBounds = new Bounds();
-                IndexBounds = new Bounds();
-                PushoutBounds = new Bounds();
-                foreach (var series in Series)
-                {
-                    if (series.SeriesId == -1) series.SeriesId = _nextSeries++;
-                    theme.ResolveSeriesDefaults(theme.CurrentColors, series);
-
-                    var seriesBounds = series.GetBounds(this);
-
-                    ValueBounds.AppendValue(seriesBounds.PrimaryBounds.Max);
-                    ValueBounds.AppendValue(seriesBounds.PrimaryBounds.Min);
-                    IndexBounds.AppendValue(seriesBounds.SecondaryBounds.Max);
-                    IndexBounds.AppendValue(seriesBounds.SecondaryBounds.Min);
-                    PushoutBounds.AppendValue(seriesBounds.TertiaryBounds.Max);
-                    PushoutBounds.AppendValue(seriesBounds.TertiaryBounds.Min);
-                }
-
-                if (viewDrawMargin == null)
-                {
-                    var m = viewDrawMargin ?? new Margin();
-                    SetDrawMargin(controlSize, m);
-                    SetDrawMargin(controlSize, m);
-                }
-
-                // invalid dimensions, probably the chart is too small
-                // or it is initializing in the UI and has no dimensions yet
-                if (drawMarginSize.Width <= 0 || drawMarginSize.Height <= 0) return;
-
-                var toDeleteSeries = new HashSet<ISeries>(_everMeasuredSeries);
-                foreach (var series in Series)
-                {
-                    series.Measure(this);
-                    _ = _everMeasuredSeries.Add(series);
-                    _ = toDeleteSeries.Remove(series);
-
-                    var deleted = false;
-                    foreach (var item in series.DeletingTasks)
-                    {
-                        canvas.RemovePaintTask(item);
-                        item.Dispose();
-                        deleted = true;
-                    }
-                    if (deleted) series.DeletingTasks.Clear();
-                }
-
-                foreach (var series in toDeleteSeries)
-                {
-                    series.Dispose();
-                    _ = _everMeasuredSeries.Remove(series);
-                }
-
-                InvokeOnUpdateStarted();
+                theme.ApplyStyleToSeries(series);
+                ce._isThemeSet = true;
             }
 
-            Canvas.Invalidate();
+            var seriesBounds = series.GetBounds(this);
+
+            ValueBounds.AppendValue(seriesBounds.PrimaryBounds.Max);
+            ValueBounds.AppendValue(seriesBounds.PrimaryBounds.Min);
+            IndexBounds.AppendValue(seriesBounds.SecondaryBounds.Max);
+            IndexBounds.AppendValue(seriesBounds.SecondaryBounds.Min);
+            PushoutBounds.AppendValue(seriesBounds.TertiaryBounds.Max);
+            PushoutBounds.AppendValue(seriesBounds.TertiaryBounds.Min);
+
+            ce._isInternalSet = false;
         }
 
-        /// <summary>
-        /// Called when the updated the throttler is unlocked.
-        /// </summary>
-        /// <returns></returns>
-        protected override void UpdateThrottlerUnlocked()
+        InitializeVisualsCollector();
+
+        var title = View.Title;
+        var m = new Margin();
+        float ts = 0f, bs = 0f, ls = 0f, rs = 0f;
+        if (title is not null)
         {
-            Measure();
+            title.ClippingMode = ClipMode.None;
+            var titleSize = title.Measure(this);
+            m.Top = titleSize.Height;
+            ts = titleSize.Height;
+            _titleHeight = titleSize.Height;
         }
+
+        DrawLegend(ref ts, ref bs, ref ls, ref rs);
+
+        m.Top = ts;
+        m.Bottom = bs;
+        m.Left = ls;
+        m.Right = rs;
+
+        var rm = viewDrawMargin ?? new Margin(Margin.Auto);
+        var actualMargin = new Margin(
+            Margin.IsAuto(rm.Left) ? m.Left : rm.Left,
+            Margin.IsAuto(rm.Top) ? m.Top : rm.Top,
+            Margin.IsAuto(rm.Right) ? m.Right : rm.Right,
+            Margin.IsAuto(rm.Bottom) ? m.Bottom : rm.Bottom);
+
+        SetDrawMargin(ControlSize, actualMargin);
+
+        // invalid dimensions, probably the chart is too small
+        // or it is initializing in the UI and has no dimensions yet
+        if (DrawMarginSize.Width <= 0 || DrawMarginSize.Height <= 0) return;
+
+        UpdateBounds();
+
+        if (title is not null)
+        {
+            var titleSize = title.Measure(this);
+            title.AlignToTopLeftCorner();
+            title.X = ControlSize.Width * 0.5f - titleSize.Width * 0.5f;
+            title.Y = 0;
+            AddVisual(title);
+        }
+
+        foreach (var visual in VisualElements) AddVisual(visual);
+        foreach (var series in VisibleSeries)
+        {
+            AddVisual((ChartElement<TDrawingContext>)series);
+            _drawnSeries.Add(series.SeriesId);
+        }
+
+        CollectVisuals();
+
+        if (_isToolTipOpen) DrawToolTip();
+        InvokeOnUpdateStarted();
+        _isFirstDraw = false;
+        ThemeId = LiveCharts.DefaultSettings.CurrentThemeId;
+
+        Canvas.Invalidate();
+        _isFirstDraw = false;
+    }
+
+    /// <inheritdoc cref="Chart{TDrawingContext}.Unload"/>
+    public override void Unload()
+    {
+        base.Unload();
+        _isFirstDraw = true;
     }
 }

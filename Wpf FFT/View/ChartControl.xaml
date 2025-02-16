@@ -12,8 +12,19 @@
              
              >
     <Grid>
-        
-        <lvc:CartesianChart  Height="auto" Width="auto" x:Name="CartesianChart" VerticalAlignment="Stretch" HorizontalAlignment="Stretch"
+
+        <lvc:CartesianChart
+            x:Name="CartesianChart"
+ Series="{Binding Path=Series , Mode=TwoWay, ElementName=Control}" VerticalAlignment="Stretch" HorizontalAlignment="Stretch"
+ZoomMode="X"
+ XAxes="{Binding XAxe, ElementName=Control}"
+  
+ TooltipPosition="Left"
+ TooltipTextSize="14">
+        </lvc:CartesianChart>
+
+
+        <!--<lvc:CartesianChart  Height="auto" Width="auto" x:Name="CartesianChart" VerticalAlignment="Stretch" HorizontalAlignment="Stretch"
                                 Series="{Binding Path=Series , Mode=TwoWay, ElementName=Control}" ZoomMode="X"
                                 XAxes="{Binding XAxe, ElementName=Control}" >
 
@@ -49,6 +60,6 @@
             </lvc:CartesianChart.TooltipTemplate>
 
 
-        </lvc:CartesianChart>
+        </lvc:CartesianChart>-->
     </Grid>
 </UserControl>
