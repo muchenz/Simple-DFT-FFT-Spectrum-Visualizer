@@ -10,3 +10,9 @@ Put time functions and see their frequency domain spectrum.
   
 Download:
 * Framework dependent (.NET8.0):  [Simple-DFT-FFT-Spectrum-Visualizer.zip](https://github.com/muchenz/Simple-DFT-FFT-Spectrum-Visualizer/files/14234383/Simple-DFT-FFT-Spectrum-Visualizer.zip)
+
+#### ver. 1.0.0.4
+* Changed LiveCharts to 2.0 (seems slower but resolve problems with custom scaling (custom dpi))
+* Added bins chart
+* Added Nyquist bin option for symmerty of chart
+* Added Impulse train to examples
