@@ -20,449 +20,387 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using LiveChartsCore.Defaults;
-using LiveChartsCore.Drawing;
+// Ignore Spelling: Tooltip
+
 using System;
 using System.Collections.Generic;
+using LiveChartsCore.Defaults;
+using LiveChartsCore.Drawing;
+using LiveChartsCore.Kernel.Providers;
 using LiveChartsCore.Measure;
 using LiveChartsCore.Themes;
 
-namespace LiveChartsCore.Kernel
+namespace LiveChartsCore.Kernel;
+
+/// <summary>
+/// LiveCharts global settings
+/// </summary>
+public class LiveChartsSettings
 {
+    private object? _currentProvider;
+    private readonly Dictionary<Type, object> _mappers = new();
+    private object _theme = new();
+
     /// <summary>
-    /// LiveCharts global settings
+    /// Gets the theme identifier.
     /// </summary>
-    public class LiveChartsSettings
+    /// <value>
+    /// The theme identifier.
+    /// </value>
+    public object CurrentThemeId { get; private set; } = new();
+
+    /// <summary>
+    /// Gets or sets the default easing function.
+    /// </summary>
+    /// <value>
+    /// The default easing function.
+    /// </value>
+    public Func<float, float> EasingFunction { get; set; } = EasingFunctions.ExponentialOut;
+
+    /// <summary>
+    /// Gets or sets the default animations speed.
+    /// </summary>
+    /// <value>
+    /// The default animations speed.
+    /// </value>
+    public TimeSpan AnimationsSpeed { get; set; } = TimeSpan.FromMilliseconds(800);
+
+    /// <summary>
+    /// Gets or sets the default zoom speed.
+    /// </summary>
+    /// <value>
+    /// The default zoom speed.
+    /// </value>
+    public double ZoomSpeed { get; set; } = 0.2;
+
+    /// <summary>
+    /// Gets or sets the default zoom mode.
+    /// </summary>
+    /// <value>
+    /// The default zoom mode.
+    /// </value>
+    public ZoomAndPanMode ZoomMode { get; set; } = ZoomAndPanMode.None;
+
+    /// <summary>
+    /// Gets or sets the default legend position.
+    /// </summary>
+    /// <value>
+    /// The default legend position.
+    /// </value>
+    public LegendPosition LegendPosition { get; set; } = LegendPosition.Hidden;
+
+    /// <summary>
+    /// Gets or sets the default legend background paint.
+    /// </summary>
+    public object? LegendBackgroundPaint { get; set; }
+
+    /// <summary>
+    /// Gets or sets the default legend text paint.
+    /// </summary>
+    public object? LegendTextPaint { get; set; }
+
+    /// <summary>
+    /// Gets or sets the default legend text size.
+    /// </summary>
+    public double? LegendTextSize { get; set; }
+
+    /// <summary>
+    /// Gets or sets the default tooltip position.
+    /// </summary>
+    /// <value>
+    /// The default tooltip position.
+    /// </value>
+    public TooltipPosition TooltipPosition { get; set; } = TooltipPosition.Auto;
+
+    /// <summary>
+    /// Gets or sets the default tooltip background paint.
+    /// </summary>
+    public object? TooltipBackgroundPaint { get; set; }
+
+    /// <summary>
+    /// Gets or sets the default tooltip text paint.
+    /// </summary>
+    public object? TooltipTextPaint { get; set; }
+
+    /// <summary>
+    /// Gets or sets the default tooltip text size.
+    /// </summary>
+    public double? TooltipTextSize { get; set; }
+
+    /// <summary>
+    /// Gets or sets the default max with for labels inside tooltips and legends.
+    /// </summary>
+    public double MaxTooltipsAndLegendsLabelsWidth { get; set; } = 170;
+
+    /// <summary>
+    /// Gets or sets the default tooltip finding strategy.
+    /// </summary>
+    /// <value>
+    /// The default tooltip finding strategy.
+    /// </value>
+    public TooltipFindingStrategy TooltipFindingStrategy { get; set; } = TooltipFindingStrategy.Automatic;
+
+    /// <summary>
+    /// Gets or sets the default polar initial rotation.
+    /// </summary>
+    /// <value>
+    /// The default animations speed.
+    /// </value>
+    public double PolarInitialRotation { get; set; } = -90;
+
+    /// <summary>
+    /// Gets or sets the default update throttling timeout
+    /// </summary>
+    /// <value>
+    /// The default update throttling timeout
+    /// </value>
+    public TimeSpan UpdateThrottlingTimeout { get; set; } = TimeSpan.FromMilliseconds(50);
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the text is right to left.
+    /// </summary>
+    public bool IsRightToLeft { get; set; }
+
+    /// <summary>
+    /// Adds or replaces a mapping for a given type, the mapper defines how a type is mapped to a <see cref="Coordinate"/>
+    /// in the chart.
+    /// </summary>
+    /// <typeparam name="TModel">The type of the model.</typeparam>
+    /// <param name="mapper">The mapper.</param>
+    /// <returns></returns>
+    public LiveChartsSettings HasMap<TModel>(Func<TModel, int, Coordinate> mapper)
     {
-        private object? _currentFactory;
-        private readonly Dictionary<Type, object> _mappers = new();
-        private readonly Dictionary<Type, object> _seriesStyleBuilder = new();
+        var t = typeof(TModel);
+        _mappers[t] = mapper;
+        return this;
+    }
 
-        /// <summary>
-        /// Gets or sets the default easing function.
-        /// </summary>
-        /// <value>
-        /// The default easing function.
-        /// </value>
-        public Func<float, float> DefaultEasingFunction { get; set; } = EasingFunctions.QuadraticOut;
+    /// <summary>
+    /// Indicates that the library should render tooltips in a right to left mode, you also need to load
+    /// a right to left font.
+    /// </summary>
+    /// <returns></returns>
+    public LiveChartsSettings UseRightToLeftSettings()
+    {
+        IsRightToLeft = true;
+        return this;
+    }
 
-        /// <summary>
-        /// Gets or sets the default animations speed.
-        /// </summary>
-        /// <value>
-        /// The default animations speed.
-        /// </value>
-        public TimeSpan DefaultAnimationsSpeed { get; set; } = TimeSpan.FromMilliseconds(500);
+    internal Func<TModel, int, Coordinate> GetMap<TModel>()
+    {
+        return !_mappers.TryGetValue(typeof(TModel), out var mapper)
+            ? throw new NotImplementedException(
+                $"A mapper for type {typeof(TModel)} is not implemented yet, consider using " +
+                $"{nameof(LiveCharts)}.{nameof(LiveCharts.Configure)}() " +
+                $"method to call {nameof(HasMap)}() with the type you are trying to plot.")
+            : (Func<TModel, int, Coordinate>)mapper;
+    }
 
-        /// <summary>
-        /// Gets or sets the default zoom speed.
-        /// </summary>
-        /// <value>
-        /// The default zoom speed.
-        /// </value>
-        public double DefaultZoomSpeed { get; set; } = 0.8;
+    internal LiveChartsSettings HasProvider<TDrawingContext>(ChartEngine<TDrawingContext> factory)
+        where TDrawingContext : DrawingContext
+    {
+        _currentProvider = factory;
+        return this;
+    }
 
-        /// <summary>
-        /// Gets or sets the default zoom mode.
-        /// </summary>
-        /// <value>
-        /// The default zoom mode.
-        /// </value>
-        public ZoomAndPanMode DefaultZoomMode { get; set; } = ZoomAndPanMode.None;
+    internal ChartEngine<TDrawingContext> GetProvider<TDrawingContext>()
+        where TDrawingContext : DrawingContext
+    {
+        return _currentProvider is null
+            ? throw new NotImplementedException(
+                $"There is no a {nameof(ChartEngine<TDrawingContext>)} registered.")
+            : (ChartEngine<TDrawingContext>)_currentProvider;
+    }
 
-        /// <summary>
-        /// Gets or sets the default legend position.
-        /// </summary>
-        /// <value>
-        /// The default legend position.
-        /// </value>
-        public LegendPosition DefaultLegendPosition { get; set; } = LegendPosition.Hidden;
+    /// <summary>
+    /// Sets the default animations speed.
+    /// </summary>
+    /// <param name="animationsSpeed">The animations speed.</param>
+    /// <returns>The current settings</returns>
+    public LiveChartsSettings WithAnimationsSpeed(TimeSpan animationsSpeed)
+    {
+        AnimationsSpeed = animationsSpeed;
+        return this;
+    }
 
-        /// <summary>
-        /// Gets or sets the default legend orientation.
-        /// </summary>
-        /// <value>
-        /// The default legend orientation.
-        /// </value>
-        public LegendOrientation DefaultLegendOrientation { get; set; } = LegendOrientation.Auto;
+    /// <summary>
+    /// Sets the default the default easing function.
+    /// </summary>
+    /// <param name="easingFunction">The easing function.</param>
+    /// <returns>The current settings</returns>
+    public LiveChartsSettings WithEasingFunction(Func<float, float> easingFunction)
+    {
+        EasingFunction = easingFunction;
+        return this;
+    }
 
-        /// <summary>
-        /// Gets or sets the default tooltip position.
-        /// </summary>
-        /// <value>
-        /// The default tooltip position.
-        /// </value>
-        public TooltipPosition DefaultTooltipPosition { get; set; } = TooltipPosition.Top;
+    /// <summary>
+    /// Sets the default the default zoom speed.
+    /// </summary>
+    /// <param name="speed">The speed.</param>
+    /// <returns>The current settings</returns>
+    public LiveChartsSettings WithZoomSpeed(double speed)
+    {
+        ZoomSpeed = speed;
+        return this;
+    }
 
-        /// <summary>
-        /// Gets or sets the default tooltip finding strategy.
-        /// </summary>
-        /// <value>
-        /// The default tooltip finding strategy.
-        /// </value>
-        public TooltipFindingStrategy DefaultTooltipFindingStrategy { get; set; } = TooltipFindingStrategy.CompareOnlyX;
+    /// <summary>
+    /// Sets the default the default zoom mode.
+    /// </summary>
+    /// <param name="zoomMode">The zoom mode.</param>
+    /// <returns>The current settings</returns>
+    public LiveChartsSettings WithZoomMode(ZoomAndPanMode zoomMode)
+    {
+        ZoomMode = zoomMode;
+        return this;
+    }
 
-        /// <summary>
-        /// Adds or replaces a mapping for a given type, the mapper defines how a type is mapped to a<see cref="ChartPoint"/> instance,
-        /// then the <see cref="ChartPoint"/> will be drawn as a point in our chart.
-        /// </summary>
-        /// <typeparam name="TModel">The type of the model.</typeparam>
-        /// <param name="mapper">The mapper.</param>
-        /// <returns></returns>
-        public LiveChartsSettings HasMap<TModel>(Action<TModel, ChartPoint> mapper)
-        {
-            var t = typeof(TModel);
-            _mappers[t] = mapper;
-            return this;
-        }
+    /// <summary>
+    /// Sets the default the default update throttling timeout
+    /// </summary>
+    /// <param name="timeout">The update throttling timeout.</param>
+    /// <returns>The current settings</returns>
+    public LiveChartsSettings WithUpdateThrottlingTimeout(TimeSpan timeout)
+    {
+        UpdateThrottlingTimeout = timeout;
+        return this;
+    }
 
-        internal Action<TModel, ChartPoint> GetMap<TModel>()
-        {
-            return !_mappers.TryGetValue(typeof(TModel), out var mapper)
-                ? throw new NotImplementedException(
-                    $"A mapper for type {typeof(TModel)} is not implemented yet, consider using " +
-                    $"{nameof(LiveCharts)}.{nameof(LiveCharts.Configure)}() " +
-                    $"method to call {nameof(HasMap)}() with the type you are trying to plot.")
-                : (Action<TModel, ChartPoint>)mapper;
-        }
+    /// <summary>
+    /// Sets the default legend background paint.
+    /// </summary>
+    /// <typeparam name="TDrawingContext">The type of the drawing context.</typeparam>
+    /// <param name="paint">The paint.</param>
+    /// <returns>The current settings.</returns>
+    public LiveChartsSettings WithLegendBackgroundPaint<TDrawingContext>(IPaint<TDrawingContext> paint)
+        where TDrawingContext : DrawingContext
+    {
+        LegendBackgroundPaint = paint;
+        return this;
+    }
 
-        internal LiveChartsSettings HasDataFactory<TDrawingContext>(IDataFactoryProvider<TDrawingContext> factory)
-            where TDrawingContext : DrawingContext
-        {
-            _currentFactory = factory;
-            return this;
-        }
+    /// <summary>
+    /// Sets the default legend text paint.
+    /// </summary>
+    /// <typeparam name="TDrawingContext">The type of the drawing context.</typeparam>
+    /// <param name="paint">The paint.</param>
+    /// <returns>The current settings.</returns>
+    public LiveChartsSettings WithLegendTextPaint<TDrawingContext>(IPaint<TDrawingContext> paint)
+        where TDrawingContext : DrawingContext
+    {
+        LegendTextPaint = paint;
+        return this;
+    }
 
-        internal IDataFactoryProvider<TDrawingContext> GetFactory<TDrawingContext>()
-            where TDrawingContext : DrawingContext
-        {
-            return _currentFactory == null
-                ? throw new NotImplementedException($"There is no a {nameof(IDataFactoryProvider<TDrawingContext>)} registered")
-                : (IDataFactoryProvider<TDrawingContext>)_currentFactory;
-        }
+    /// <summary>
+    /// Sets the default legend text size.
+    /// </summary>
+    /// <param name="size">The size.</param>
+    /// <returns>The current settings.</returns>
+    public LiveChartsSettings WithLegendTextSize<TDrawingContext>(double? size)
+    {
+        LegendTextSize = size;
+        return this;
+    }
 
-        /// <summary>
-        /// Sets the default animations speed.
-        /// </summary>
-        /// <param name="animationsSpeed">The animations speed.</param>
-        /// <returns>the current settings</returns>
-        public LiveChartsSettings WithDefaultAnimationsSpeed(TimeSpan animationsSpeed)
-        {
-            DefaultAnimationsSpeed = animationsSpeed;
-            return this;
-        }
+    /// <summary>
+    /// Sets the default tooltip background paint.
+    /// </summary>
+    /// <typeparam name="TDrawingContext">The type of the drawing context.</typeparam>
+    /// <param name="paint">The paint.</param>
+    /// <returns>The current settings.</returns>
+    public LiveChartsSettings WithTooltipBackgroundPaint<TDrawingContext>(IPaint<TDrawingContext> paint)
+        where TDrawingContext : DrawingContext
+    {
+        TooltipBackgroundPaint = paint;
+        return this;
+    }
 
-        /// <summary>
-        /// Withes the default easing function.
-        /// </summary>
-        /// <param name="easingFunction">The easing function.</param>
-        /// <returns>the current settings</returns>
-        public LiveChartsSettings WithDefaultEasingFunction(Func<float, float> easingFunction)
-        {
-            DefaultEasingFunction = easingFunction;
-            return this;
-        }
+    /// <summary>
+    /// Sets the default tooltip text paint.
+    /// </summary>
+    /// <typeparam name="TDrawingContext">The type of the drawing context.</typeparam>
+    /// <param name="paint">The paint.</param>
+    /// <returns>The current settings.</returns>
+    public LiveChartsSettings WithTooltipTextPaint<TDrawingContext>(IPaint<TDrawingContext> paint)
+        where TDrawingContext : DrawingContext
+    {
+        TooltipTextPaint = paint;
+        return this;
+    }
 
-        /// <summary>
-        /// Withes the default zoom speed.
-        /// </summary>
-        /// <param name="speed">The speed.</param>
-        /// <returns>the current settings</returns>
-        public LiveChartsSettings WithDefaultZoomSpeed(double speed)
-        {
-            DefaultZoomSpeed = speed;
-            return this;
-        }
+    /// <summary>
+    /// Sets the default tooltip text size.
+    /// </summary>
+    /// <param name="size">The size.</param>
+    /// <returns>The current settings.</returns>
+    public LiveChartsSettings WithTooltipTextSize<TDrawingContext>(double? size)
+    {
+        TooltipTextSize = size;
+        return this;
+    }
 
+    /// <summary>
+    /// Removes a map from the settings.
+    /// </summary>
+    /// <typeparam name="TModel">The type of the model.</typeparam>
+    /// <returns></returns>
+    public LiveChartsSettings RemoveMap<TModel>()
+    {
+        _ = _mappers.Remove(typeof(TModel));
+        return this;
+    }
 
-        /// <summary>
-        /// Withes the default zoom mode.
-        /// </summary>
-        /// <param name="zoomMode">The zoom mode.</param>
-        /// <returns>the current settings</returns>
-        public LiveChartsSettings WithDefaultZoomMode(ZoomAndPanMode zoomMode)
-        {
-            DefaultZoomMode = zoomMode;
-            return this;
-        }
+    /// <summary>
+    /// Adds the default styles.
+    /// </summary>
+    /// <typeparam name="TDrawingContext">The type of the drawing context.</typeparam>
+    /// <param name="builder">The builder.</param>
+    /// <returns></returns>
+    public LiveChartsSettings HasTheme<TDrawingContext>(Action<Theme<TDrawingContext>> builder)
+        where TDrawingContext : DrawingContext
+    {
+        CurrentThemeId = new object();
+        Theme<TDrawingContext> t;
+        _theme = t = new Theme<TDrawingContext>();
+        builder(t);
 
-        /// <summary>
-        /// Removes a map from the settings.
-        /// </summary>
-        /// <typeparam name="TModel">The type of the model.</typeparam>
-        /// <returns></returns>
-        public LiveChartsSettings RemoveMap<TModel>()
-        {
-            _ = _mappers.Remove(typeof(TModel));
-            return this;
-        }
+        return this;
+    }
 
-        /// <summary>
-        /// Adds the default styles.
-        /// </summary>
-        /// <typeparam name="TDrawingContext">The type of the drawing context.</typeparam>
-        /// <param name="builder">The builder.</param>
-        /// <returns></returns>
-        public LiveChartsSettings HasTheme<TDrawingContext>(Action<Theme<TDrawingContext>> builder)
-            where TDrawingContext : DrawingContext
-        {
-            if (!_seriesStyleBuilder.TryGetValue(typeof(TDrawingContext), out var stylesBuilder))
-            {
-                stylesBuilder = new Theme<TDrawingContext>();
-                _seriesStyleBuilder[typeof(TDrawingContext)] = stylesBuilder;
-            }
+    /// <summary>
+    /// Gets the styles builder.
+    /// </summary>
+    /// <typeparam name="TDrawingContext">The type of the drawing context.</typeparam>
+    /// <returns></returns>
+    /// <exception cref="Exception">$"The type {nameof(TDrawingContext)} is not registered.</exception>
+    public Theme<TDrawingContext> GetTheme<TDrawingContext>()
+        where TDrawingContext : DrawingContext
+    {
+        return (Theme<TDrawingContext>?)_theme ?? throw new Exception("A theme is required.");
+    }
 
-            var sb = (Theme<TDrawingContext>)stylesBuilder;
-            builder(sb);
-
-            return this;
-        }
-
-        /// <summary>
-        /// Gets the styles builder.
-        /// </summary>
-        /// <typeparam name="TDrawingContext">The type of the drawing context.</typeparam>
-        /// <returns></returns>
-        /// <exception cref="Exception">$"The type {nameof(TDrawingContext)} is not registered.</exception>
-        public Theme<TDrawingContext> GetTheme<TDrawingContext>()
-            where TDrawingContext : DrawingContext
-        {
-            return !_seriesStyleBuilder.TryGetValue(typeof(TDrawingContext), out var stylesBuilder)
-                ? throw new Exception($"The type {nameof(TDrawingContext)} is not registered.")
-                : (Theme<TDrawingContext>)stylesBuilder;
-        }
-
-        /// <summary>
-        /// Enables LiveCharts to be able to plot short, int, long, float, double, decimal, short?, int?, long?, float?, double?, decimal?,
-        /// <see cref="WeightedPoint"/>, <see cref="ObservableValue"/>, <see cref="ObservablePoint"/>, <see cref="WeightedPointF"/>,
-        /// <see cref="ObservableValueF"/> and <see cref="ObservablePointF"/>.
-        /// </summary>
-        /// <returns></returns>
-        public LiveChartsSettings AddDefaultMappers()
-        {
-            return HasMap<short>((model, point) =>
-                 {
-                     point.PrimaryValue = model;
-                     point.SecondaryValue = point.Context.Index;
-                 })
-                 .HasMap<int>((model, point) =>
-                 {
-                     point.PrimaryValue = model;
-                     point.SecondaryValue = point.Context.Index;
-                 })
-                 .HasMap<long>((model, point) =>
-                 {
-                     point.PrimaryValue = model;
-                     point.SecondaryValue = point.Context.Index;
-                 })
-                 .HasMap<float>((model, point) =>
-                 {
-                     point.PrimaryValue = model;
-                     point.SecondaryValue = point.Context.Index;
-                 })
-                 .HasMap<double>((model, point) =>
-                 {
-                     point.PrimaryValue = unchecked((float)model);
-                     point.SecondaryValue = point.Context.Index;
-                 })
-                 .HasMap<decimal>((model, point) =>
-                 {
-                     point.PrimaryValue = unchecked((float)model);
-                     point.SecondaryValue = point.Context.Index;
-                 })
-                 .HasMap<short?>((model, point) =>
-                 {
-                     if (model == null)
-                     {
-                         point.IsNull = true;
-                         return;
-                     }
-                     point.IsNull = false;
-                     point.PrimaryValue = model.Value;
-                     point.SecondaryValue = point.Context.Index;
-                 })
-                 .HasMap<int?>((model, point) =>
-                 {
-                     if (model == null)
-                     {
-                         point.IsNull = true;
-                         return;
-                     }
-                     point.IsNull = false;
-                     point.PrimaryValue = model.Value;
-                     point.SecondaryValue = point.Context.Index;
-                 })
-                 .HasMap<long?>((model, point) =>
-                 {
-                     if (model == null)
-                     {
-                         point.IsNull = true;
-                         return;
-                     }
-                     point.IsNull = false;
-                     point.PrimaryValue = model.Value;
-                     point.SecondaryValue = point.Context.Index;
-                 })
-                 .HasMap<float?>((model, point) =>
-                 {
-                     if (model == null)
-                     {
-                         point.IsNull = true;
-                         return;
-                     }
-                     point.IsNull = false;
-                     point.PrimaryValue = model.Value;
-                     point.SecondaryValue = point.Context.Index;
-                 })
-                 .HasMap<double?>((model, point) =>
-                 {
-                     if (model == null)
-                     {
-                         point.IsNull = true;
-                         return;
-                     }
-                     point.IsNull = false;
-                     point.PrimaryValue = unchecked((float)model.Value);
-                     point.SecondaryValue = point.Context.Index;
-                 })
-                 .HasMap<decimal?>((model, point) =>
-                 {
-                     if (model == null)
-                     {
-                         point.IsNull = true;
-                         return;
-                     }
-                     point.IsNull = false;
-                     point.PrimaryValue = unchecked((float)model.Value);
-                     point.SecondaryValue = point.Context.Index;
-                 })
-                 .HasMap<WeightedPoint>((model, point) =>
-                 {
-                     if (model == null)
-                         throw new Exception(
-                             $"A {nameof(WeightedPoint)} can not be null, instead set to null to any of its properties.");
-
-                     if (model.Weight == null || model.X == null || model.Y == null)
-                     {
-                         point.IsNull = true;
-                         return;
-                     }
-
-                     point.IsNull = false;
-                     unchecked
-                     {
-                         point.PrimaryValue = (float)model.Y.Value;
-                         point.SecondaryValue = (float)model.X.Value;
-                         point.TertiaryValue = (float)model.Weight.Value;
-                     }
-                 })
-                 .HasMap<ObservableValue>((model, point) =>
-                 {
-                     if (model == null)
-                         throw new Exception(
-                             $"A {nameof(ObservableValue)} can not be null, instead set to null to any of its properties.");
-
-                     if (model.Value == null)
-                     {
-                         point.IsNull = true;
-                         return;
-                     }
-
-                     point.IsNull = false;
-                     unchecked
-                     {
-                         point.PrimaryValue = (float)model.Value.Value;
-                         point.SecondaryValue = point.Context.Index;
-                     }
-                 })
-                 .HasMap<ObservableValueF>((model, point) =>
-                 {
-                     if (model == null)
-                         throw new Exception(
-                             $"A {nameof(ObservableValueF)} can not be null, instead set to null to any of its properties.");
-
-                     if (model.Value == null)
-                     {
-                         point.IsNull = true;
-                         return;
-                     }
-
-                     point.IsNull = false;
-                     unchecked
-                     {
-                         point.PrimaryValue = model.Value.Value;
-                         point.SecondaryValue = point.Context.Index;
-                     }
-                 })
-                 .HasMap<ObservablePoint>((model, point) =>
-                 {
-                     if (model == null)
-                         throw new Exception(
-                             $"A {nameof(ObservablePoint)} can not be null, instead set to null to any of its properties.");
-
-                     if (model.X == null || model.Y == null)
-                     {
-                         point.IsNull = true;
-                         return;
-                     }
-
-                     point.IsNull = false;
-                     unchecked
-                     {
-                         point.PrimaryValue = (float)model.Y.Value;
-                         point.SecondaryValue = (float)model.X.Value;
-                     }
-                 })
-                 .HasMap<ObservablePointF>((model, point) =>
-                 {
-                     if (model == null)
-                         throw new Exception(
-                             $"A {nameof(ObservablePointF)} can not be null, instead set to null to any of its properties.");
-
-                     if (model.X == null || model.Y == null)
-                     {
-                         point.IsNull = true;
-                         return;
-                     }
-
-                     point.IsNull = false;
-                     point.PrimaryValue = model.Y.Value;
-                     point.SecondaryValue = model.X.Value;
-                 })
-                 .HasMap<DateTimePoint>((model, point) =>
-                 {
-                     if (model == null)
-                         throw new Exception(
-                             $"A {nameof(DateTimePoint)} can not be null, instead set to null the " +
-                             $"{nameof(DateTimePoint.Value)} property.");
-
-                     if (model.Value == null)
-                     {
-                         point.IsNull = true;
-                         return;
-                     }
-
-                     point.IsNull = false;
-                     point.PrimaryValue = (float)model.Value.Value;
-                     point.SecondaryValue = model.DateTime.Ticks;
-                 })
-                 .HasMap<DateTimePointF>((model, point) =>
-                 {
-                     if (model == null)
-                         throw new Exception(
-                             $"A {nameof(DateTimePointF)} can not be null, instead set to null the " +
-                             $"{nameof(DateTimePointF.Value)} property.");
-
-                     if (model.Value == null)
-                     {
-                         point.IsNull = true;
-                         return;
-                     }
-
-                     point.IsNull = false;
-                     point.PrimaryValue = model.Value.Value;
-                     point.SecondaryValue = model.DateTime.Ticks;
-                 });
-        }
+    /// <summary>
+    /// Enables LiveCharts to be able to plot short, int, long, float, double, decimal, short?, int?, long?, float?, double?, decimal?,
+    /// <see cref="WeightedPoint"/>, <see cref="ObservableValue"/>, <see cref="ObservablePoint"/>, <see cref="DateTimePoint"/> and
+    /// <see cref="FinancialPoint"/>.
+    /// </summary>
+    /// <returns></returns>
+    public LiveChartsSettings AddDefaultMappers()
+    {
+        return
+            HasMap<short>((model, index) => new(index, model))
+            .HasMap<int>((model, index) => new(index, model))
+            .HasMap<long>((model, index) => new(index, model))
+            .HasMap<float>((model, index) => new(index, model))
+            .HasMap<double>((model, index) => new(index, model))
+            .HasMap<decimal>((model, index) => new(index, (double)model))
+            .HasMap<short?>((model, index) => new(index, model!.Value))
+            .HasMap<int?>((model, index) => new(index, model!.Value))
+            .HasMap<long?>((model, index) => new(index, model!.Value))
+            .HasMap<float?>((model, index) => new(index, model!.Value))
+            .HasMap<double?>((model, index) => new(index, model!.Value))
+            .HasMap<decimal?>((model, index) => new(index, (double)model!.Value));
     }
 }

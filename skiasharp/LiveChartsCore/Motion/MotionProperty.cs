@@ -21,140 +21,164 @@
 // SOFTWARE.
 
 using LiveChartsCore.Drawing;
-using LiveChartsCore.Drawing.Common;
 
-namespace LiveChartsCore.Motion
+namespace LiveChartsCore.Motion;
+
+/// <summary>
+/// The <see cref="MotionProperty{T}"/> object tracks where a property of a <see cref="Animatable"/> is in a time line.
+/// </summary>
+/// <typeparam name="T"></typeparam>
+public abstract class MotionProperty<T> : IMotionProperty
 {
+    private static readonly bool s_canBeNull = Kernel.Extensions.CanBeNull(typeof(T));
+
     /// <summary>
-    /// The <see cref="MotionProperty{T}"/> object tracks where a property of a <see cref="Animatable"/> is in a time line.
+    /// From value
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    public abstract class MotionProperty<T> : IMotionProperty
+    protected internal T? fromValue = default;
+
+    /// <summary>
+    /// To value
+    /// </summary>
+    protected internal T? toValue = default;
+
+    private long _startTime;
+    private long _endTime;
+    private bool _requiresToInitialize = true;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="MotionProperty{T}"/> class.
+    /// </summary>
+    /// <param name="propertyName">Name of the property.</param>
+    protected MotionProperty(string propertyName)
     {
-        /// <summary>
-        /// From value
-        /// </summary>
-        protected internal T? fromValue = default;
+        PropertyName = propertyName;
+    }
 
-        /// <summary>
-        /// To value
-        /// </summary>
-        protected internal T? toValue = default;
-        internal long _startTime;
-        internal long _endTime;
-        private bool _requiresToInitialize = true;
+    /// <summary>
+    /// Gets the value where the transition began.
+    /// </summary>
+    public T? FromValue => fromValue;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="MotionProperty{T}"/> class.
-        /// </summary>
-        /// <param name="propertyName">Name of the property.</param>
-        public MotionProperty(string propertyName)
+    /// <summary>
+    /// Gets the value where the transition finished or will finish.
+    /// </summary>
+    public T? ToValue => toValue;
+
+    /// <inheritdoc cref="IMotionProperty.Animation"/>
+    public Animation? Animation { get; set; }
+
+    /// <inheritdoc cref="IMotionProperty.PropertyName"/>
+    public string PropertyName { get; }
+
+    /// <inheritdoc cref="IMotionProperty.IsCompleted"/>
+    public bool IsCompleted { get; set; } = false;
+
+    /// <inheritdoc cref="IMotionProperty.CopyFrom(IMotionProperty)"/>
+    public void CopyFrom(IMotionProperty source)
+    {
+        var typedSource = (MotionProperty<T>)source;
+
+        fromValue = typedSource.FromValue;
+        toValue = typedSource.ToValue;
+        _startTime = typedSource._startTime;
+        _endTime = typedSource._endTime;
+        _requiresToInitialize = typedSource._requiresToInitialize;
+        Animation = typedSource.Animation;
+        IsCompleted = typedSource.IsCompleted;
+    }
+
+    /// <summary>
+    /// Moves to the specified value.
+    /// </summary>
+    /// <param name="value">The value to move to.</param>
+    /// <param name="animatable">The <see cref="IAnimatable"/> instance that is moving.</param>
+    public void SetMovement(T value, Animatable animatable)
+    {
+        fromValue = GetMovement(animatable);
+        toValue = value;
+        if (Animation is not null)
         {
-            PropertyName = propertyName;
-        }
-
-        /// <summary>
-        /// Gets the value where the transition began.
-        /// </summary>
-        public T? FromValue => fromValue;
-
-        /// <summary>
-        /// Gets the value where the transition finished or will finish.
-        /// </summary>
-        public T? ToValue => toValue;
-
-        /// <summary>
-        /// Gets or sets the animation to define the transition.
-        /// </summary>
-        public Animation? Animation { get; set; }
-
-        /// <summary>
-        /// Gets the property name.
-        /// </summary>
-        public string PropertyName { get; }
-
-        /// <summary>
-        /// Gets or sets a value indicating whether this instance is completed.
-        /// </summary>
-        /// <value>
-        ///   <c>true</c> if this instance is completed; otherwise, <c>false</c>.
-        /// </value>
-        public bool IsCompleted { get; set; } = false;
-
-        /// <summary>
-        /// Moves to he specified value.
-        /// </summary>
-        /// <param name="value">The value to move to.</param>
-        /// <param name="animatable">The <see cref="IAnimatable"/> instance that is moving.</param>
-        public void SetMovement(T value, Animatable animatable)
-        {
-            fromValue = GetMovement(animatable);
-            toValue = value;
-            if (Animation != null)
+            if (animatable.CurrentTime == long.MinValue) // the animatable is not in the canvas yet.
             {
-                if (animatable._currentTime == long.MinValue) // the animatable is not in the canvas yet.
-                {
-                    _requiresToInitialize = true;
-                }
-                else
-                {
-                    _startTime = animatable._currentTime;
-                    _endTime = animatable._currentTime + Animation._duration;
-                }
-                Animation._animationCompletedCount = 0;
-                IsCompleted = false;
                 _requiresToInitialize = true;
             }
-            animatable.Invalidate();
+            else
+            {
+                _startTime = animatable.CurrentTime;
+                _endTime = animatable.CurrentTime + Animation._duration;
+            }
+            Animation._animationCompletedCount = 0;
+            IsCompleted = false;
+            _requiresToInitialize = true;
+        }
+        animatable.IsValid = false;
+    }
+
+    /// <summary>
+    /// Gets the current movement in the <see cref="Animation"/>.
+    /// </summary>
+    /// <param name="animatable"></param>
+    /// <returns></returns>
+    public T GetMovement(Animatable animatable)
+    {
+        // For some reason JITter can't remove value type boxing when started under PerfView Run command
+        // Emitted IL has boxing originally, but JITter should be able to optimize it to 'false' or 'Nullable<T>.HasValue'
+        // When s_canBeNull is false JITter should remove second check from generated code
+        var fromValueIsNull = s_canBeNull && fromValue is null;
+        if (Animation is null || Animation.EasingFunction is null || fromValueIsNull || IsCompleted) return OnGetMovement(1);
+
+        if (_requiresToInitialize || _startTime == long.MinValue)
+        {
+            _startTime = animatable.CurrentTime;
+            _endTime = animatable.CurrentTime + Animation._duration;
+            _requiresToInitialize = false;
         }
 
-        /// <summary>
-        /// Gets the current movement in the <see cref="Animation"/>.
-        /// </summary>
-        /// <param name="animatable"></param>
-        /// <returns></returns>
-        public T GetMovement(Animatable animatable)
+        // at this points we are sure that the animatable has not finished at least with this property.
+        animatable.IsValid = false;
+
+        var p = (animatable.CurrentTime - _startTime) / unchecked((float)(_endTime - _startTime));
+
+        if (p >= 1)
         {
-            if (Animation == null || Animation.EasingFunction == null || fromValue == null || IsCompleted) return OnGetMovement(1);
-
-            if (_requiresToInitialize)
+            // at this point the animation is completed
+            p = 1;
+            Animation._animationCompletedCount++;
+            IsCompleted = Animation._repeatTimes != int.MaxValue && Animation._repeatTimes < Animation._animationCompletedCount;
+            if (!IsCompleted)
             {
-                _startTime = animatable._currentTime;
-                _endTime = animatable._currentTime + Animation._duration;
-                _requiresToInitialize = false;
+                _startTime = animatable.CurrentTime;
+                _endTime = animatable.CurrentTime + Animation._duration;
+                IsCompleted = false;
             }
+        }
 
-            // at this points we are sure that the animatable has not finished at least with this property.
-            animatable._isCompleted = false;
+        var fp = Animation.EasingFunction(p);
+        return OnGetMovement(fp);
+    }
 
-            // is this line necessary? ...
-            //if (animatable.currentTime - startTime <= 0) return OnGetMovement(0);
-
-            var p = (animatable._currentTime - _startTime) / unchecked((float)(_endTime - _startTime));
-
-            if (p >= 1)
-            {
-                // at this point the animation is completed
-                p = 1;
-                Animation._animationCompletedCount++;
-                IsCompleted = Animation._repeatTimes != int.MaxValue && Animation._repeatTimes < Animation._animationCompletedCount;
-                if (!IsCompleted)
-                {
-                    _startTime = animatable._currentTime;
-                    _endTime = animatable._currentTime + Animation._duration;
-                    IsCompleted = false;
-                }
-            }
-
-            var fp = Animation.EasingFunction(p);
+    /// <summary>
+    /// Gets the current value in the time line.
+    /// </summary>
+    /// <param name="animatable">The animatable object.</param>
+    /// <returns>The current value.</returns>
+    public T GetCurrentValue(Animatable animatable)
+    {
+        unchecked
+        {
+            var p = (animatable.CurrentTime - _startTime) / (float)(_endTime - _startTime);
+            if (p >= 1) p = 1;
+            if (animatable.CurrentTime == long.MinValue) p = 0;
+            var fp = Animation?.EasingFunction?.Invoke(p) ?? 1;
             return OnGetMovement(fp);
         }
-
-        /// <summary>
-        /// Called to get the movement at a specific progress.
-        /// </summary>
-        /// <param name="progress">The progress.</param>
-        /// <returns></returns>
-        protected abstract T OnGetMovement(float progress);
     }
+
+    /// <summary>
+    /// Called to get the movement at a specific progress.
+    /// </summary>
+    /// <param name="progress">The progress.</param>
+    /// <returns></returns>
+    protected abstract T OnGetMovement(float progress);
 }

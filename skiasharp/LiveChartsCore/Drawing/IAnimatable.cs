@@ -20,73 +20,61 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+using System.Collections.Generic;
 using LiveChartsCore.Motion;
 
-namespace LiveChartsCore.Drawing
+namespace LiveChartsCore.Drawing;
+
+/// <summary>
+/// Defines an animated object, the properties of this object move according to the easing and speed when a change occurs.
+/// </summary>
+public interface IAnimatable
 {
     /// <summary>
-    /// Defines an object that can is able to animate its properties.
+    /// Gets or sets a value indicating whether this instance is completed.
     /// </summary>
-    public interface IAnimatable
-    {
-        /// <summary>
-        /// Gets or sets a value indicating whether this instance is completed.
-        /// </summary>
-        /// <value>
-        ///   <c>true</c> if this instance is completed; otherwise, <c>false</c>.
-        /// </value>
-        bool IsCompleted { get; set; }
+    /// <value>
+    ///   <c>true</c> if this instance is completed; otherwise, <c>false</c>.
+    /// </value>
+    bool IsValid { get; set; }
 
-        /// <summary>
-        /// Gets or sets the current time.
-        /// </summary>
-        /// <value>
-        /// The current time.
-        /// </value>
-        long CurrentTime { get; set; }
+    /// <summary>
+    /// Gets or sets the current time.
+    /// </summary>
+    /// <value>
+    /// The current time.
+    /// </value>
+    long CurrentTime { get; set; }
 
-        /// <summary>
-        /// Gets or sets a value indicating whether the element is removed when all the transitions complete.
-        /// </summary>
-        /// <value>
-        ///   <c>true</c> if remove on completed; otherwise, <c>false</c>.
-        /// </value>
-        bool RemoveOnCompleted { get; set; }
+    /// <summary>
+    /// Gets or sets a value indicating whether the element is removed when all the transitions complete.
+    /// </summary>
+    /// <value>
+    ///   <c>true</c> if remove on completed; otherwise, <c>false</c>.
+    /// </value>
+    bool RemoveOnCompleted { get; set; }
 
-        /// <summary>
-        /// Sets the properties transitions.
-        /// </summary>
-        /// <param name="animation">The animation.</param>
-        /// <param name="propertyName">Name of the property.</param>
-        void SetPropertiesTransitions(Animation? animation, params string[] propertyName);
+    /// <summary>
+    /// Gets the motion properties.
+    /// </summary>
+    Dictionary<string, IMotionProperty> MotionProperties { get; }
 
-        /// <summary>
-        /// Removes a property transition.
-        /// </summary>
-        /// <param name="propertyName">Name of the property.</param>
-        void RemovePropertyTransition(string propertyName);
+    /// <summary>
+    /// Sets a property transition for the specified property or properties.
+    /// </summary>
+    /// <param name="animation">The animation.</param>
+    /// <param name="propertyName">Name of the property, use null to set all the animatable properties.</param>
+    void SetTransition(Animation? animation, params string[]? propertyName);
 
-        /// <summary>
-        /// Removes all the current transitions.
-        /// </summary>
-        void RemoveTransitions();
+    /// <summary>
+    /// Removes a property or properties transitions.
+    /// </summary>
+    /// <param name="propertyName">Name of the property, null to remove them all.</param>
+    void RemoveTransition(params string[]? propertyName);
 
-        /// <summary>
-        /// Completes all transitions.
-        /// </summary>
-        void CompleteAllTransitions();
-
-        /// <summary>
-        /// Completes the transitions.
-        /// </summary>
-        /// <param name="propertyName">Name of the property.</param>
-        void CompleteTransitions(params string[] propertyName);
-
-        /// <summary>
-        /// Gets the transition property.
-        /// </summary>
-        /// <param name="propertyName">Name of the property.</param>
-        /// <returns></returns>
-        IMotionProperty GetTransitionProperty(string propertyName);
-    }
+    /// <summary>
+    /// Completes the property or properties transitions.
+    /// </summary>
+    /// <param name="propertyName">Name of the property, null to select them all.</param>
+    void CompleteTransition(params string[]? propertyName);
 }

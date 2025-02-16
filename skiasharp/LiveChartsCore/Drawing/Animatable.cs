@@ -20,136 +20,82 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using LiveChartsCore.Motion;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using LiveChartsCore.Motion;
 
-namespace LiveChartsCore.Drawing.Common
+namespace LiveChartsCore.Drawing;
+
+/// <inheritdoc cref="IAnimatable" />
+public abstract class Animatable : IAnimatable
 {
-    /// <inheritdoc cref="IAnimatable" />
-    public abstract class Animatable : IAnimatable
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Animatable"/> class.
+    /// </summary>
+    protected Animatable() { }
+
+    /// <inheritdoc cref="IAnimatable.IsValid" />
+    public bool IsValid { get; set; } = true;
+
+    /// <inheritdoc cref="IAnimatable.CurrentTime" />
+    public long CurrentTime { get; set; } = long.MinValue;
+
+    /// <inheritdoc cref="IAnimatable.RemoveOnCompleted" />
+    public bool RemoveOnCompleted { get; set; }
+
+    /// <inheritdoc cref="IAnimatable.MotionProperties" />
+    public Dictionary<string, IMotionProperty> MotionProperties { get; } = new();
+
+    /// <inheritdoc cref="IAnimatable.SetTransition(Animation?, string[])" />
+    public void SetTransition(Animation? animation, params string[]? propertyName)
     {
-        /// <summary>
-        /// The transition properties
-        /// </summary>
-        protected Dictionary<string, IMotionProperty> transitionProperties = new();
-        internal long _currentTime = long.MinValue;
-        internal bool _isCompleted = true;
-        internal bool _removeOnCompleted;
+        var a = animation?.Duration == 0 ? null : animation;
+        if (propertyName is null || propertyName.Length == 0) propertyName = MotionProperties.Keys.ToArray();
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Animatable"/> class.
-        /// </summary>
-        public Animatable() { }
-
-        /// <inheritdoc cref="IAnimatable.IsCompleted" />
-        bool IAnimatable.IsCompleted { get => _isCompleted; set => _isCompleted = value; }
-
-        /// <inheritdoc cref="IAnimatable.CurrentTime" />
-        long IAnimatable.CurrentTime { get => _currentTime; set => _currentTime = value; }
-
-        /// <inheritdoc cref="IAnimatable.RemoveOnCompleted" />
-        public bool RemoveOnCompleted { get => _removeOnCompleted; set => _removeOnCompleted = value; }
-
-        /// <inheritdoc cref="SetPropertiesTransitions(Animation, string[])" />
-        public void SetPropertiesTransitions(Animation? animation, params string[] properties)
+        foreach (var name in propertyName)
         {
-            var a = animation?.Duration == 0 ? null : animation;
-
-            foreach (var name in properties)
-            {
-                transitionProperties[name].Animation = a;
-            }
+            MotionProperties[name].Animation = a;
         }
+    }
 
-        /// <inheritdoc cref="IAnimatable.RemovePropertyTransition(string)" />
-        public void RemovePropertyTransition(string propertyName)
+    /// <inheritdoc cref="IAnimatable.RemoveTransition(string[])" />
+    public void RemoveTransition(params string[]? propertyName)
+    {
+        if (propertyName is null || propertyName.Length == 0) propertyName = MotionProperties.Keys.ToArray();
+
+        foreach (var name in propertyName)
         {
-            transitionProperties[propertyName].Animation = null;
+            MotionProperties[name].Animation = null;
         }
+    }
 
-        /// <inheritdoc cref="IAnimatable.RemoveTransitions" />
-        public void RemoveTransitions()
-        {
-            foreach (var property in transitionProperties)
-            {
-                property.Value.Animation = null;
-            }
-        }
+    /// <inheritdoc cref="IAnimatable.CompleteTransition(string[])" />
+    public virtual void CompleteTransition(params string[]? propertyName)
+    {
+        if (propertyName is null || propertyName.Length == 0) propertyName = MotionProperties.Keys.ToArray();
 
-        /// <summary>
-        /// Invalidates this animatable.
-        /// </summary>
-        /// <returns></returns>
-        public void Invalidate()
+        foreach (var property in propertyName)
         {
-            _isCompleted = false;
-        }
-
-        /// <inheritdoc cref="IAnimatable.CompleteTransitions(string[])" />
-        public void CompleteTransitions(params string[] propertyNames)
-        {
-            if (propertyNames == null || propertyNames.Length == 0)
+            if (!MotionProperties.TryGetValue(property, out var transitionProperty))
                 throw new Exception(
-                    $"At least one property is required to call {nameof(CompleteTransitions)}.");
+                    $"The property {property} is not a transition property of this instance.");
 
-            foreach (var property in propertyNames)
-            {
-                if (!transitionProperties.TryGetValue(property, out var transitionProperty))
-                    throw new Exception(
-                        $"The property {property} is not a transition property of this instance.");
-
-                if (transitionProperty.Animation == null) continue;
-                transitionProperty.IsCompleted = true;
-            }
+            if (transitionProperty.Animation is null) continue;
+            transitionProperty.IsCompleted = true;
         }
+    }
 
-        /// <inheritdoc cref="IAnimatable.CompleteAllTransitions" />
-        public void CompleteAllTransitions()
-        {
-            CompleteTransitions(transitionProperties.Keys.ToArray());
-        }
-
-        /// <inheritdoc cref="IAnimatable.GetTransitionProperty(string)" />
-        public IMotionProperty GetTransitionProperty(string propertyName)
-        {
-            return !transitionProperties.TryGetValue(propertyName, out var transitionProperty)
-                ? throw new Exception(
-                    $"The property {propertyName} is not a transition property of this instance.")
-                : transitionProperty;
-        }
-
-        /// <summary>
-        /// Registers a motion property.
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="transition">The transition.</param>
-        /// <returns></returns>
-        protected T RegisterMotionProperty<T>(T transition)
-            where T : IMotionProperty
-        {
-            transitionProperties[transition.PropertyName] = transition;
-            return transition;
-        }
-
-        /// <summary>
-        /// Sets the current time.
-        /// </summary>
-        /// <param name="time">The time.</param>
-        /// <returns></returns>
-        protected void SetCurrentTime(long time)
-        {
-            _currentTime = time;
-        }
-
-        /// <summary>
-        /// Gets the current time.
-        /// </summary>
-        /// <returns></returns>
-        protected long GetCurrentTime()
-        {
-            return _currentTime;
-        }
+    /// <summary>
+    /// Registers a motion property.
+    /// </summary>
+    /// <typeparam name="T">The type of the property.</typeparam>
+    /// <param name="motionProperty">The transition.</param>
+    /// <returns></returns>
+    protected T RegisterMotionProperty<T>(T motionProperty)
+        where T : IMotionProperty
+    {
+        MotionProperties[motionProperty.PropertyName] = motionProperty;
+        return motionProperty;
     }
 }

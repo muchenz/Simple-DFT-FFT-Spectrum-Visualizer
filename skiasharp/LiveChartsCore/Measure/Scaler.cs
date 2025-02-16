@@ -21,160 +21,176 @@
 // SOFTWARE.
 
 using System;
-using System.Drawing;
-using LiveChartsCore.Kernel;
+using LiveChartsCore.Drawing;
+using LiveChartsCore.Kernel.Sketches;
 
-namespace LiveChartsCore.Measure
+namespace LiveChartsCore.Measure;
+
+/// <summary>
+/// Defines the scaler class, this class helps to scale from the data scale to the user interface scale and vise versa.
+/// </summary>
+public class Scaler
 {
+    private readonly double _deltaVal, _m, _mInv, _minPx, _maxPx, _deltaPx;
+    private readonly AxisOrientation _orientation;
+
     /// <summary>
-    /// Defines the scaler class, this class helps to scale from the data scale to the user interface scale and vise versa.
+    /// Initializes a new instance of the <see cref="Scaler"/> class.
     /// </summary>
-    public class Scaler
+    /// <param name="drawMarginLocation">The draw margin location.</param>
+    /// <param name="drawMarginSize">Size of the draw margin.</param>
+    /// <param name="axis">The axis.</param>
+    /// <param name="bounds">Indicates the bounds to use.</param>
+    /// <exception cref="Exception">The axis is not ready to be scaled.</exception>
+    public Scaler(
+        LvcPoint drawMarginLocation,
+        LvcSize drawMarginSize,
+        ICartesianAxis axis,
+        Bounds? bounds = null)
     {
-        private readonly float _m, _mInv, _minPx, _maxPx, _deltaPx, _minVal, _maxVal, _deltaVal;
+        if (axis.Orientation == AxisOrientation.Unknown) throw new Exception("The axis is not ready to be scaled.");
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Scaler"/> class.
-        /// </summary>
-        /// <param name="drawMaringLocation">The draw margin location.</param>
-        /// <param name="drawMarginSize">Size of the draw margin.</param>
-        /// <param name="axis">The axis.</param>
-        /// <param name="usePreviousScale">Indicates if the scaler should be built based on the previous known data.</param>
-        /// <exception cref="Exception">The axis is not ready to be scaled.</exception>
-        public Scaler(
-            PointF drawMaringLocation, SizeF drawMarginSize, IAxis axis, bool usePreviousScale = false)
+        _orientation = axis.Orientation;
+
+        var actualBounds = axis.DataBounds;
+        var actualVisibleBounds = axis.VisibleDataBounds;
+        var maxLimit = axis.MaxLimit;
+        var minLimit = axis.MinLimit;
+
+        if (bounds != null)
         {
-            if (axis.Orientation == AxisOrientation.Unknown) throw new Exception("The axis is not ready to be scaled.");
+            actualBounds = bounds;
+            actualVisibleBounds = bounds;
+            minLimit = null;
+            maxLimit = null;
+        }
 
-            var actualBounds = usePreviousScale ? axis.PreviousDataBounds : axis.DataBounds;
-            var actualVisibleBounds = usePreviousScale ? axis.PreviousVisibleDataBounds : axis.VisibleDataBounds;
-            var maxLimit = usePreviousScale ? axis.PreviousMaxLimit : axis.MaxLimit;
-            var minLimit = usePreviousScale ? axis.PreviousMinLimit : axis.MinLimit;
+        if (axis.Orientation == AxisOrientation.X)
+        {
+            _minPx = drawMarginLocation.X;
+            _maxPx = drawMarginLocation.X + drawMarginSize.Width;
+            _deltaPx = _maxPx - _minPx;
 
-            if (actualBounds == null || actualVisibleBounds == null) throw new Exception("bounds not found");
+            MaxVal = axis.IsInverted ? actualBounds.Min : actualBounds.Max;
+            MinVal = axis.IsInverted ? actualBounds.Max : actualBounds.Min;
 
-            if (double.IsInfinity(actualBounds.Delta) || double.IsInfinity(actualVisibleBounds.Delta))
+            if (maxLimit is not null || minLimit is not null)
             {
-                _maxVal = 0;
-                _minVal = 0;
-                _deltaVal = 0;
-
-                if (axis.Orientation == AxisOrientation.X)
-                {
-                    _minPx = drawMaringLocation.X;
-                    _maxPx = drawMaringLocation.X + drawMarginSize.Width;
-                    _deltaPx = _maxPx - _minPx;
-                }
-                else
-                {
-                    _minPx = drawMaringLocation.Y;
-                    _maxPx = drawMaringLocation.Y + drawMarginSize.Height;
-                    _deltaPx = _maxPx - _minPx;
-                }
-
-                _m = 0;
-                _mInv = 0;
-
-                return;
-            }
-
-            if (axis.Orientation == AxisOrientation.X)
-            {
-                _minPx = drawMaringLocation.X;
-                _maxPx = drawMaringLocation.X + drawMarginSize.Width;
-                _deltaPx = _maxPx - _minPx;
-
-                _maxVal = (float)(axis.IsInverted ? actualBounds.Min : actualBounds.Max);
-                _minVal = (float)(axis.IsInverted ? actualBounds.Max : actualBounds.Min);
-
-                if (maxLimit != null || minLimit != null)
-                {
-                    _maxVal = (float)(axis.IsInverted ? minLimit ?? _minVal : maxLimit ?? _maxVal);
-                    _minVal = (float)(axis.IsInverted ? maxLimit ?? _maxVal : minLimit ?? _minVal);
-                }
-                else
-                {
-                    var visibleMax = (float)(axis.IsInverted ? actualVisibleBounds.Min : actualVisibleBounds.Max);
-                    var visibleMin = (float)(axis.IsInverted ? actualVisibleBounds.Max : actualVisibleBounds.Min);
-
-                    if (visibleMax != _maxVal || visibleMin != _minVal)
-                    {
-                        _maxVal = visibleMax;
-                        _minVal = visibleMin;
-                    }
-                }
-
-                _deltaVal = _maxVal - _minVal;
+                MaxVal = axis.IsInverted ? minLimit ?? MinVal : maxLimit ?? MaxVal;
+                MinVal = axis.IsInverted ? maxLimit ?? MaxVal : minLimit ?? MinVal;
             }
             else
             {
-                _minPx = drawMaringLocation.Y;
-                _maxPx = drawMaringLocation.Y + drawMarginSize.Height;
-                _deltaPx = _maxPx - _minPx;
+                var visibleMax = axis.IsInverted ? actualVisibleBounds.Min : actualVisibleBounds.Max;
+                var visibleMin = axis.IsInverted ? actualVisibleBounds.Max : actualVisibleBounds.Min;
 
-                _maxVal = (float)(axis.IsInverted ? actualBounds.Max : actualBounds.Min);
-                _minVal = (float)(axis.IsInverted ? actualBounds.Min : actualBounds.Max);
+                AxisLimit.ValidateLimits(ref visibleMin, ref visibleMax);
 
-                if (maxLimit != null || minLimit != null)
+                if (visibleMax != MaxVal || visibleMin != MinVal)
                 {
-                    _maxVal = (float)(axis.IsInverted ? maxLimit ?? _maxVal : minLimit ?? _minVal);
-                    _minVal = (float)(axis.IsInverted ? minLimit ?? _minVal : maxLimit ?? _maxVal);
+                    MaxVal = visibleMax;
+                    MinVal = visibleMin;
                 }
-                else
-                {
-                    var visibleMax = (float)(axis.IsInverted ? actualVisibleBounds.Max : actualVisibleBounds.Min);
-                    var visibleMin = (float)(axis.IsInverted ? actualVisibleBounds.Min : actualVisibleBounds.Max);
-
-                    if (visibleMax != _maxVal || visibleMin != _minVal)
-                    {
-                        _maxVal = visibleMax;
-                        _minVal = visibleMin;
-                    }
-                }
-
-                _deltaVal = _maxVal - _minVal;
             }
 
-            _m = _deltaPx / _deltaVal;
-            _mInv = 1 / _m;
-
-            if (!double.IsNaN(_m) && !double.IsInfinity(_m)) return;
-            _m = 0;
-            _mInv = 0;
+            _deltaVal = MaxVal - MinVal;
         }
-
-        internal Scaler()
+        else
         {
-            _minPx = 0;
-            _maxPx = 100;
+            _minPx = drawMarginLocation.Y;
+            _maxPx = drawMarginLocation.Y + drawMarginSize.Height;
             _deltaPx = _maxPx - _minPx;
 
-            _maxVal = 0;
-            _minVal = 100;
-            _deltaVal = _maxVal - _minVal;
+            MaxVal = axis.IsInverted ? actualBounds.Max : actualBounds.Min;
+            MinVal = axis.IsInverted ? actualBounds.Min : actualBounds.Max;
 
-            _m = _deltaPx / _deltaVal;
-            _mInv = 1 / _m;
+            if (maxLimit is not null || minLimit is not null)
+            {
+                MaxVal = axis.IsInverted ? maxLimit ?? MinVal : minLimit ?? MaxVal;
+                MinVal = axis.IsInverted ? minLimit ?? MaxVal : maxLimit ?? MinVal;
+            }
+            else
+            {
+                var visibleMax = axis.IsInverted ? actualVisibleBounds.Max : actualVisibleBounds.Min;
+                var visibleMin = axis.IsInverted ? actualVisibleBounds.Min : actualVisibleBounds.Max;
+
+                AxisLimit.ValidateLimits(ref visibleMax, ref visibleMin);
+
+                if (visibleMax != MaxVal || visibleMin != MinVal)
+                {
+                    MaxVal = visibleMax;
+                    MinVal = visibleMin;
+                }
+            }
+
+            _deltaVal = MaxVal - MinVal;
         }
 
-        /// <summary>
-        /// Converts to pixels.
-        /// </summary>
-        /// <param name="value">The value.</param>
-        /// <returns></returns>
-        public float ToPixels(float value)
+        _m = _deltaPx / _deltaVal;
+        _mInv = 1 / _m;
+
+        if (!double.IsNaN(_m) && !double.IsInfinity(_m)) return;
+        _m = 0;
+        _mInv = 0;
+    }
+
+    internal Scaler()
+    {
+        _minPx = 0;
+        _maxPx = 100;
+        _deltaPx = _maxPx - _minPx;
+
+        MaxVal = 0;
+        MinVal = 100;
+        _deltaVal = MaxVal - MinVal;
+
+        _m = _deltaPx / _deltaVal;
+        _mInv = 1 / _m;
+    }
+
+    /// <summary>
+    /// Gets the maximum value.
+    /// </summary>
+    public double MaxVal { get; private set; }
+
+    /// <summary>
+    /// Gets the minimum value.
+    /// </summary>
+    public double MinVal { get; private set; }
+
+    /// <summary>
+    /// Measures an absolute value in pixels.
+    /// </summary>
+    /// <param name="value">The value.</param>
+    /// <returns></returns>
+    public float MeasureInPixels(double value)
+    {
+        unchecked
         {
-            return _minPx + (value - _minVal) * _m;
+            return Math.Abs(
+                _orientation == AxisOrientation.X
+                    ? (float)(_minPx + (value - MinVal) * _m - (_minPx + (0 - MinVal) * _m))
+                    : (float)(_minPx + (0 - MinVal) * _m - (_minPx + (value - MinVal) * _m)));
         }
+    }
 
-        /// <summary>
-        /// Converts to chart values.
-        /// </summary>
-        /// <param name="pixels">The pixels.</param>
-        /// <returns></returns>
-        public float ToChartValues(float pixels)
-        {
-            return _minVal + (pixels - _minPx) * _mInv;
-        }
+    /// <summary>
+    /// Converts a given value (in chart values) to pixels.
+    /// </summary>
+    /// <param name="value">The value in chart values.</param>
+    /// <returns></returns>
+    public float ToPixels(double value)
+    {
+        return unchecked((float)(_minPx + (value - MinVal) * _m));
+    }
+
+    /// <summary>
+    /// Converts a given value (in pixels) to chart values.
+    /// </summary>
+    /// <param name="pixels">The value in pixels.</param>
+    /// <returns></returns>
+    public double ToChartValues(double pixels)
+    {
+        return MinVal + (pixels - _minPx) * _mInv;
     }
 }

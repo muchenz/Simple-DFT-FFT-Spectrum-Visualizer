@@ -22,32 +22,57 @@
 
 using System;
 
-namespace LiveChartsCore.Measure
+namespace LiveChartsCore.Measure;
+
+/// <summary>
+/// Defines the zooming and panning mode.
+/// </summary>
+[Flags]
+public enum ZoomAndPanMode
 {
     /// <summary>
-    /// Defines the zooming and panning mode.
+    /// Disables zooming and panning.
     /// </summary>
-    [Flags]
-    public enum ZoomAndPanMode
-    {
-        /// <summary>
-        /// Disables zooming and panning.
-        /// </summary>
-        None = 0,
+    None = 0,
 
-        /// <summary>
-        /// Zooms only in the X axis.
-        /// </summary>
-        X = 1 << 0,
+    /// <summary>
+    /// Enables panning on the X axis.
+    /// </summary>
+    PanX = 1 << 0,
 
-        /// <summary>
-        /// Zooms only in the Y axis.
-        /// </summary>
-        Y = 1 << 1,
+    /// <summary>
+    /// Enables panning on the Y axis.
+    /// </summary>
+    PanY = 1 << 1,
 
-        /// <summary>
-        /// Zooms on both axes.
-        /// </summary>
-        Both = X | Y
-    }
+    /// <summary>
+    /// Enables zooming on the X axis.
+    /// </summary>
+    ZoomX = 1 << 2,
+
+    /// <summary>
+    /// Enables zooming on the Y axis.
+    /// </summary>
+    ZoomY = 1 << 3,
+
+    /// <summary>
+    /// When this flag is present the panning will be triggered using the right click on desktop devices and the touch-and-hold gesture on touch devices.
+    /// The "Zoom by section" feature will be triggered to the left click on desktop devices and the touch-and-hold gesture on touch devices.
+    /// </summary>
+    InvertPanningPointerTrigger = 1 << 4,
+
+    /// <summary>
+    /// Enables zooming and panning on the X axis.
+    /// </summary>
+    X = PanX | ZoomX,
+
+    /// <summary>
+    /// Enables zooming and panning on the Y axis.
+    /// </summary>
+    Y = PanY | ZoomY,
+
+    /// <summary>
+    /// Enables zooming and panning on both axes.
+    /// </summary>
+    Both = X | Y
 }

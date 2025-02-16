@@ -20,46 +20,45 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace LiveChartsCore.Measure
+namespace LiveChartsCore.Measure;
+
+/// <summary>
+/// Defines the data labels position.
+/// </summary>
+public enum DataLabelsPosition
 {
     /// <summary>
-    /// Defines the data labales position.
+    /// Aligns the label to the end in the axis direction.
     /// </summary>
-    public enum DataLabelsPosition
-    {
-        /// <summary>
-        /// The end
-        /// </summary>
-        End,
+    End,
 
-        /// <summary>
-        /// The start
-        /// </summary>
-        Start,
+    /// <summary>
+    /// Aligns the label to the start in the axis direction.
+    /// </summary>
+    Start,
 
-        /// <summary>
-        /// The middle
-        /// </summary>
-        Middle,
+    /// <summary>
+    /// Aligns the label to the middle of the axis.
+    /// </summary>
+    Middle,
 
-        /// <summary>
-        /// The top
-        /// </summary>
-        Top,
+    /// <summary>
+    /// Aligns the label to the top.
+    /// </summary>
+    Top,
 
-        /// <summary>
-        /// The bottom
-        /// </summary>
-        Bottom,
+    /// <summary>
+    /// Aligns the label to the top.
+    /// </summary>
+    Bottom,
 
-        /// <summary>
-        /// The left
-        /// </summary>
-        Left,
+    /// <summary>
+    /// Aligns the label to the left.
+    /// </summary>
+    Left,
 
-        /// <summary>
-        /// The right
-        /// </summary>
-        Right
-    }
+    /// <summary>
+    /// Aligns the label to the right.
+    /// </summary>
+    Right
 }

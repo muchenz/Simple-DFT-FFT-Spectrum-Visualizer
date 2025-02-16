@@ -38,7 +38,13 @@ namespace Wpf_FFT.MVVM
         private readonly IDialogService _dialogService;
         public MainWindowVM(IDialogService dialogService)
         {
-            LiveCharts.Configure(a => a.HasMap<DataModel>((b, c) => { c.PrimaryValue = (float)b.Value; c.SecondaryValue = b.Second; }));
+            // LiveCharts.Configure(a => a.HasMap<DataModel>((b, c) => { c.PrimaryValue = (float)b.Value; c.SecondaryValue = b.Second; }));
+            LiveCharts.Configure(conf =>
+            {
+                conf.HasMap<DataModel>((model, c) => new Coordinate(model.Second, model.Value));
+
+            });
+
             _dialogService = dialogService;
             Compute.Execute(null);
         }
@@ -48,7 +54,12 @@ namespace Wpf_FFT.MVVM
              *    only for design
              *    
              */
-            LiveCharts.Configure(a => a.HasMap<DataModel>((b, c) => { c.PrimaryValue = (float)b.Value; c.SecondaryValue = b.Second; }));
+            //LiveCharts.Configure(a => a.HasMap<DataModel>((b, c) => { c.PrimaryValue = (float)b.Value; c.SecondaryValue = b.Second; }));
+            LiveCharts.Configure(conf =>
+            {
+                conf.HasMap<DataModel>((model, c) => new Coordinate(model.Second, model.Value));
+
+            });
 
         }
 
@@ -138,7 +149,7 @@ namespace Wpf_FFT.MVVM
         }
 
         public List<Axis> _xAxe = (new List<Axis> { new Axis {
-         SeparatorsBrush = new SolidColorPaintTask { Color = new SKColor(245,245,245),
+         SeparatorsBrush = new SolidColorPaint { Color = new SKColor(245,245,245),
              StrokeThickness = 1 },
 
         } });
@@ -153,8 +164,8 @@ namespace Wpf_FFT.MVVM
         }
 
         public List<Axis> XAxe2 => new List<Axis> { new Axis {
-         SeparatorsBrush = new SolidColorPaintTask { Color = new SKColor(245,245,245),
-             StrokeThickness = 1 },
+        // SeparatorsBrush = new SolidColorPaintTask { Color = new SKColor(245,245,245),
+         //    StrokeThickness = 1 },
           } };
 
         public string Error => throw new NotImplementedException();
@@ -409,7 +420,7 @@ namespace Wpf_FFT.MVVM
 
         public ICommand AmplitudeModulation => new ActionCommand((o) =>
         {
-            FunctionToFFT = "(1 + 0.3 * sin(2 * 4*pi *  t*f)) * sin(2 * pi * 40 * t*f)";
+            FunctionToFFT = "(1 + 0.3 * sin(4*pi *  t*f)) * sin(pi * 40 * t*f)";
             Frequency = "500";
             Lenght = "2048";
             ZerosNumber = "0";
@@ -444,6 +455,17 @@ namespace Wpf_FFT.MVVM
             SamplingFrequency = "100000";
 
         });
+
+        public ICommand ImpulseTrain => new ActionCommand((o) =>
+        {
+            FunctionToFFT = "if(sin(2.0 * pi* t * f)>0.995, 1, 0)";
+            Frequency = "2000";
+            Lenght = "2048";
+            ZerosNumber = "0";
+            SamplingFrequency = "100000";
+
+        });
+
         public ICommand SinePlusNoise => new ActionCommand((o) =>
         {
             FunctionToFFT = "sin(2.0 * pi* t * f)+rUni(0,2)-rUni(0,2)";
@@ -465,7 +487,7 @@ namespace Wpf_FFT.MVVM
 
         public ICommand FrequerencyModulation => new ActionCommand((o) =>
         {
-            FunctionToFFT = "sin(2.0 * pi* t* f*sin(2.0 * pi* t* f/20))";
+            FunctionToFFT = "sin(4.0 * pi* t* f + 10 * sin(4.0 * pi* t* f/20))";
             Frequency = "2000";
             Lenght = "2048";
             ZerosNumber = "0";
@@ -507,7 +529,8 @@ namespace Wpf_FFT.MVVM
         {
             if (_cSpectrum == null) return;
 
-            double[] lmSpectrum = _cSpectrum.ToList().Select(a => a.Phase).ToArray();
+            //double[] lmSpectrum = _cSpectrum.ToList().Select(a => a.Phase).ToArray();
+            double[] lmSpectrum = DSP.ConvertComplex.ToPhaseRadians(_cSpectrum);
             SeriesFrequency = ChartHelper.GetSeriesFrequency(lmSpectrum, _freqSpan, _oldShiftValue);
         }, (o) => true);
 
@@ -519,7 +542,7 @@ namespace Wpf_FFT.MVVM
 
         public ICommand ExitCommand => new ActionCommand((o) =>
         {
-            
+
         }, (o) => true);
 
     }

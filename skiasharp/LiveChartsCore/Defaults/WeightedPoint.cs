@@ -20,80 +20,97 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using LiveChartsCore.Kernel;
 
-namespace LiveChartsCore.Defaults
+namespace LiveChartsCore.Defaults;
+
+/// <summary>
+/// Defines a point with a weighted coordinate.
+/// </summary>
+/// <seealso cref="INotifyPropertyChanged" />
+public class WeightedPoint : IChartEntity, INotifyPropertyChanged
 {
+    private double? _x;
+    private double? _y;
+    private double? _weight;
+
     /// <summary>
-    /// Defines a point with a weighted coordinate.
+    /// Initializes a new instance of the <see cref="WeightedPoint"/> class.
     /// </summary>
-    /// <seealso cref="INotifyPropertyChanged" />
-    public class WeightedPoint : INotifyPropertyChanged
+    public WeightedPoint()
+    { }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="WeightedPoint"/> class.
+    /// </summary>
+    /// <param name="x">The x.</param>
+    /// <param name="y">The y.</param>
+    /// <param name="weight">The weight.</param>
+    public WeightedPoint(double? x, double? y, double? weight)
     {
-        private double? _x;
-        private double? _y;
-        private double? _weight;
+        X = x;
+        Y = y;
+        Weight = weight;
+    }
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="WeightedPoint"/> class.
-        /// </summary>
-        public WeightedPoint()
-        {
+    /// <summary>
+    /// Gets or sets the x.
+    /// </summary>
+    /// <value>
+    /// The x.
+    /// </value>
+    public double? X { get => _x; set { _x = value; OnPropertyChanged(); } }
 
-        }
+    /// <summary>
+    /// Gets or sets the y.
+    /// </summary>
+    /// <value>
+    /// The y.
+    /// </value>
+    public double? Y { get => _y; set { _y = value; OnPropertyChanged(); } }
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="WeightedPoint"/> class.
-        /// </summary>
-        /// <param name="x">The x.</param>
-        /// <param name="y">The y.</param>
-        /// <param name="weight">The weight.</param>
-        public WeightedPoint(double? x, double? y, double? weight)
-        {
-            _x = x;
-            _y = y;
-            _weight = weight;
-        }
+    /// <summary>
+    /// Gets or sets the weight.
+    /// </summary>
+    /// <value>
+    /// The weight.
+    /// </value>
+    public double? Weight { get => _weight; set { _weight = value; OnPropertyChanged(); } }
 
-        /// <summary>
-        /// Gets or sets the x.
-        /// </summary>
-        /// <value>
-        /// The x.
-        /// </value>
-        public double? X { get => _x; set { _x = value; OnPropertyChanged(); } }
+    /// <summary>
+    /// Occurs when a property value changes.
+    /// </summary>
+    /// <returns></returns>
+    public event PropertyChangedEventHandler? PropertyChanged;
 
-        /// <summary>
-        /// Gets or sets the y.
-        /// </summary>
-        /// <value>
-        /// The y.
-        /// </value>
-        public double? Y { get => _y; set { _y = value; OnPropertyChanged(); } }
+    /// <inheritdoc cref="IChartEntity.MetaData"/>
+#if NET5_0_OR_GREATER
+    [System.Text.Json.Serialization.JsonIgnore]
+#else
+    [Newtonsoft.Json.JsonIgnore]
+#endif
+    public ChartEntityMetaData? MetaData { get; set; }
 
-        /// <summary>
-        /// Gets or sets the weight.
-        /// </summary>
-        /// <value>
-        /// The weight.
-        /// </value>
-        public double? Weight { get => _weight; set { _weight = value; OnPropertyChanged(); } }
+    /// <inheritdoc cref="IChartEntity.Coordinate"/>
+#if NET5_0_OR_GREATER
+    [System.Text.Json.Serialization.JsonIgnore]
+#else
+    [Newtonsoft.Json.JsonIgnore]
+#endif
+    public Coordinate Coordinate { get; set; } = Coordinate.Empty;
 
-        /// <summary>
-        /// Occurs when a property value changes.
-        /// </summary>
-        /// <returns></returns>
-        public event PropertyChangedEventHandler? PropertyChanged;
+    /// <summary>
+    /// Called when a property changed.
+    /// </summary>
+    /// <param name="propertyName">Name of the property.</param>
+    protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    {
+        Coordinate = _x is null || _y is null
+            ? Coordinate.Empty
+            : new(_x ?? 0, _y ?? 0, _weight ?? 0);
 
-        /// <summary>
-        /// Called when a property changed.
-        /// </summary>
-        /// <param name="propertyName">Name of the property.</param>
-        protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
-        {
-            PropertyChanged?.Invoke(propertyName, new PropertyChangedEventArgs(propertyName));
-        }
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 }

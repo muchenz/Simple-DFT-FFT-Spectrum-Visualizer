@@ -20,26 +20,45 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace LiveChartsCore.Measure
+namespace LiveChartsCore.Measure;
+
+/// <summary>
+/// Defines the tool tip finding strategy.
+/// </summary>
+public enum TooltipFindingStrategy
 {
     /// <summary>
-    /// Defines the tooltip finding strategy.
+    /// The automatic mode, it will be calculated automatically based on the series and the chart.
     /// </summary>
-    public enum TooltipFindingStrategy
-    {
-        /// <summary>
-        /// Compares X and Y coordinates.
-        /// </summary>
-        CompareAll,
+    Automatic,
 
-        /// <summary>
-        /// Compares X coordinates and ignores Y.
-        /// </summary>
-        CompareOnlyX,
+    /// <summary>
+    /// Looks for all the points that contain the pointer positon.
+    /// </summary>
+    CompareAll,
 
-        /// <summary>
-        /// Compares Y coordinates and ignores X.
-        /// </summary>
-        CompareOnlyY
-    }
+    /// <summary>
+    /// Looks for all the points that contain the pointer positon ignoring the Y axis.
+    /// </summary>
+    CompareOnlyX,
+
+    /// <summary>
+    /// Looks for all the points that contain the pointer positon ignoring the X axis.
+    /// </summary>
+    CompareOnlyY,
+
+    /// <summary>
+    /// Looks for the closest point (to the pointer) per series that contains the pointer positon.
+    /// </summary>
+    CompareAllTakeClosest,
+
+    /// <summary>
+    /// Looks for the closest point (to the pointer) per series that contains the pointer positon ignoring the Y axis.
+    /// </summary>
+    CompareOnlyXTakeClosest,
+
+    /// <summary>
+    /// Looks for the closest point (to the pointer) per series that contains the pointer positon ignoring the X axis.
+    /// </summary>
+    CompareOnlyYTakeClosest
 }

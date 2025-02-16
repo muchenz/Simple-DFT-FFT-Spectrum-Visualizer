@@ -20,53 +20,89 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace LiveChartsCore.Drawing
+namespace LiveChartsCore.Drawing;
+
+/// <summary>
+/// Defines a geometry in the user interface.
+/// </summary>
+/// <typeparam name="TDrawingContext">The type of the drawing context.</typeparam>
+/// <seealso cref="IDrawable{TDrawingContext}" />
+public interface IGeometry<TDrawingContext> : IDrawable<TDrawingContext>, IPaintable<TDrawingContext>
+    where TDrawingContext : DrawingContext
 {
     /// <summary>
-    /// Defines a geometry in the user interface.
+    /// Gets or sets the parent shape, if any the X and Y properties will be relative to the parent.
     /// </summary>
-    /// <typeparam name="TDrawingContext">The type of the drawing context.</typeparam>
-    /// <seealso cref="IDrawable{TDrawingContext}" />
-    public interface IGeometry<TDrawingContext> : IDrawable<TDrawingContext>
-        where TDrawingContext : DrawingContext
-    {
-        /// <summary>
-        /// Gets or sets the opacity.
-        /// </summary>
-        /// <value>
-        /// The opacity.
-        /// </value>
-        float Opacity { get; set; }
+    IGeometry<TDrawingContext>? Parent { get; set; }
 
-        /// <summary>
-        /// Gets or sets the rotation.
-        /// </summary>
-        /// <value>
-        /// The rotation.
-        /// </value>
-        float Rotation { get; set; }
+    /// <summary>
+    /// Gets or sets the transform origin.
+    /// </summary>
+    LvcPoint TransformOrigin { get; set; }
 
-        /// <summary>
-        /// Gets or sets the x.
-        /// </summary>
-        /// <value>
-        /// The x.
-        /// </value>
-        float X { get; set; }
+    /// <summary>
+    /// Gets or sets the translate transform.
+    /// </summary>
+    /// <value>
+    /// The translate in coordinates.
+    /// </value>
+    LvcPoint TranslateTransform { get; set; }
 
-        /// <summary>
-        /// Gets or sets the y.
-        /// </summary>
-        /// <value>
-        /// The y.
-        /// </value>
-        float Y { get; set; }
+    /// <summary>
+    /// Gets or sets the rotation transform in degrees.
+    /// </summary>
+    /// <value>
+    /// The rotation in degrees.
+    /// </value>
+    float RotateTransform { get; set; }
 
-        /// <summary>
-        /// Measures the specified drawable task.
-        /// </summary>
-        /// <param name="drawableTask">The drawable task.</param>
-        /// <returns></returns>
-        System.Drawing.SizeF Measure(IDrawableTask<TDrawingContext> drawableTask);
-    }
+    /// <summary>
+    /// Gets or sets the scale transform.
+    /// </summary>
+    /// <value>
+    /// The scale to use on the X and Y axis.
+    /// </value>
+    LvcPoint ScaleTransform { get; set; }
+
+    /// <summary>
+    /// Gets or sets the skew transform.
+    /// </summary>
+    /// <value>
+    /// The skew factor to use in the X and Y axis, both axes go from 0 to 1, where 0 is nothing and 1
+    /// the length of the shape in the specified axis.
+    /// </value>
+    LvcPoint SkewTransform { get; set; }
+
+    /// <summary>
+    /// Gets or sets the x coordinate.
+    /// When the parent is null the coordinates are relative to the canvas.
+    /// When the parent is not null
+    /// the setter coordinates are relative to the parent
+    /// but
+    /// the getter is relative to the canvas.
+    /// </summary>
+    /// <value>
+    /// The x coordinate.
+    /// </value>
+    float X { get; set; }
+
+    /// <summary>
+    /// Gets or sets the y coordinate.
+    /// When the parent is null the coordinates are relative to the canvas.
+    /// When the parent is not null
+    /// the setter coordinates are relative to the parent
+    /// but
+    /// the getter is relative to the canvas.
+    /// </summary>
+    /// <value>
+    /// The y coordinate.
+    /// </value>
+    float Y { get; set; }
+
+    /// <summary>
+    /// Measures the specified drawable task.
+    /// </summary>
+    /// <param name="drawableTask">The drawable task.</param>
+    /// <returns></returns>
+    LvcSize Measure(IPaint<TDrawingContext> drawableTask);
 }

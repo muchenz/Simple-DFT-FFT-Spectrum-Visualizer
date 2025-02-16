@@ -22,70 +22,82 @@
 
 using LiveChartsCore.Measure;
 
-namespace LiveChartsCore.Kernel
+namespace LiveChartsCore.Kernel;
+
+/// <summary>
+/// Defines bounds for both, X and Y axes.
+/// </summary>
+public class DimensionalBounds
 {
     /// <summary>
-    /// Defines bounds for both, X and Y axes.
+    /// Initializes a new instance of the <see cref="DimensionalBounds"/> class.
     /// </summary>
-    public class DimensionalBounds
+    /// <param name="setMinBounds">
+    /// Indicates if the intiial bounds should contain some values,
+    /// just to prevent the chart to be in an invalid range when the control is initializes without any data.
+    /// </param>
+    internal DimensionalBounds(bool setMinBounds)
     {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="DimensionalBounds"/> class.
-        /// </summary>
-        public DimensionalBounds()
-        {
-            PrimaryBounds = new Bounds();
-            SecondaryBounds = new Bounds();
-            TertiaryBounds = new Bounds();
-            VisiblePrimaryBounds = new Bounds();
-            VisibleSecondaryBounds = new Bounds();
-            VisibleTertiaryBounds = new Bounds();
-        }
+        PrimaryBounds = new Bounds();
+        SecondaryBounds = new Bounds();
+        TertiaryBounds = new Bounds();
+        VisiblePrimaryBounds = new Bounds();
+        VisibleSecondaryBounds = new Bounds();
+        VisibleTertiaryBounds = new Bounds();
 
-        /// <summary>
-        /// Gets or sets the primary bounds.
-        /// </summary>
-        public Bounds PrimaryBounds { get; set; }
+        if (!setMinBounds) return;
 
-        /// <summary>
-        /// Gets or sets the secondary bounds.
-        /// </summary>
-        public Bounds SecondaryBounds { get; set; }
+        VisiblePrimaryBounds.AppendValue(0);
+        VisiblePrimaryBounds.AppendValue(10);
+        PrimaryBounds.AppendValue(0);
+        PrimaryBounds.AppendValue(10);
 
-        /// <summary>
-        /// Gets or sets the tertiary bounds.
-        /// </summary>
-        public Bounds TertiaryBounds { get; set; }
+        VisibleSecondaryBounds.AppendValue(0);
+        VisibleSecondaryBounds.AppendValue(10);
+        SecondaryBounds.AppendValue(0);
+        SecondaryBounds.AppendValue(10);
 
-        /// <summary>
-        /// Gets or sets the primary bounds.
-        /// </summary>
-        public Bounds VisiblePrimaryBounds { get; set; }
+        VisibleTertiaryBounds.AppendValue(1);
+        TertiaryBounds.AppendValue(1);
 
-        /// <summary>
-        /// Gets or sets the secondary bounds.
-        /// </summary>
-        public Bounds VisibleSecondaryBounds { get; set; }
-
-        /// <summary>
-        /// Gets or sets the tertiary bounds.
-        /// </summary>
-        public Bounds VisibleTertiaryBounds { get; set; }
-
-        /// <summary>
-        /// Gets or sets the minimum delta primary.
-        /// </summary>
-        /// <value>
-        /// The minimum delta primary.
-        /// </value>
-        public float MinDeltaPrimary { get; set; } = float.MaxValue;
-
-        /// <summary>
-        /// Gets or sets the minimum delta secondary.
-        /// </summary>
-        /// <value>
-        /// The minimum delta secondary.
-        /// </value>
-        public float MinDeltaSecondary { get; set; } = float.MaxValue;
+        IsEmpty = true;
     }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="DimensionalBounds"/> class.
+    /// </summary>
+    public DimensionalBounds() : this(false)
+    { }
+
+    internal bool IsEmpty { get; }
+
+    /// <summary>
+    /// Gets or sets the primary bounds.
+    /// </summary>
+    public Bounds PrimaryBounds { get; set; }
+
+    /// <summary>
+    /// Gets or sets the secondary bounds.
+    /// </summary>
+    public Bounds SecondaryBounds { get; set; }
+
+    /// <summary>
+    /// Gets or sets the tertiary bounds.
+    /// </summary>
+    public Bounds TertiaryBounds { get; set; }
+
+    /// <summary>
+    /// Gets or sets the primary bounds.
+    /// </summary>
+    public Bounds VisiblePrimaryBounds { get; set; }
+
+    /// <summary>
+    /// Gets or sets the secondary bounds.
+    /// </summary>
+    public Bounds VisibleSecondaryBounds { get; set; }
+
+    /// <summary>
+    /// Gets or sets the tertiary bounds.
+    /// </summary>
+    public Bounds VisibleTertiaryBounds { get; set; }
 }

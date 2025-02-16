@@ -95,11 +95,26 @@ namespace Wpf_FFT
             // Save the sizes for later
             mLengthTotal = inputDataLength + zeroPaddingLength;
 
-            if (!_fullFrequencyData)
-                mLengthHalf = (mLengthTotal / 2) + 1;
-            else
-                mLengthHalf = mLengthTotal;
+            //if (!_fullFrequencyData)
+            //    mLengthHalf = (mLengthTotal / 2);// - 1;
+            //else
+            //    mLengthHalf = mLengthTotal;
 
+            mLengthHalf = (mLengthTotal / 2);
+
+            if (!_fullFrequencyData)
+            {
+                if (mLengthTotal % 2 == 0)
+                {
+                    // is_even
+                    mLengthHalf = (mLengthTotal / 2);// - 1;
+                }
+                else
+                {
+                    // is_odd
+                    mLengthHalf = ((mLengthTotal + 1) / 2);// - 1;
+                }
+            }
 
             // Set the overall scale factor for all the terms
             mDFTScale = Math.Sqrt(2) / (double)(inputDataLength + zeroPaddingLength);                 // Natural DFT Scale Factor                                           // Window Scale Factor
@@ -126,7 +141,7 @@ namespace Wpf_FFT
                 double scaleFactor = 2.0 * Math.PI / mLengthTotal;
 
                 //Parallel.For(0, mLengthHalf, (j) =>
-                for (int j = 0; j < mLengthHalf; j++)
+                for (int j = 0; j < mLengthTotal; j++)
                 {
                     double a = j * scaleFactor;
                     for (int k = 0; k < mLengthTotal; k++)
@@ -178,12 +193,12 @@ namespace Wpf_FFT
         {
             UInt32 n = mLengthTotal;
             UInt32 m = mLengthHalf;
-            double[] re = new double[m];
-            double[] im = new double[m];
-            Complex[] result = new Complex[m];
+            double[] re = new double[n];
+            double[] im = new double[n];
+            Complex[] result = new Complex[n];
             double sf = 2.0 * Math.PI / n;
 
-            Parallel.For(0, m, (j) =>
+            Parallel.For(0, n, (j) =>
             //for (UInt32 j = 0; j < m; j++)
             {
                 double a = j * sf;
@@ -202,7 +217,7 @@ namespace Wpf_FFT
             result[0] = new Complex(result[0].Real / Math.Sqrt(2), 0.0);
             result[mLengthHalf - 1] = new Complex(result[mLengthHalf - 1].Real / Math.Sqrt(2), 0.0);
 
-            return result;
+            return result.Take((int)mLengthHalf).ToArray();
 
 
         }
@@ -218,12 +233,29 @@ namespace Wpf_FFT
             }
             else
             {
-                for (int i = 0; i < mLengthHalf; i++)
+                for (int i = 0; i < result.Length; i++)
                 {
-                    if (i < mLengthHalf / 2)
-                        resultOutput[i] = result[mLengthHalf / 2 + i];
+
+                    //if (i < mLengthHalf / 2)
+                    //    resultOutput[i] = result[mLengthHalf / 2 - i];
+                    //else
+                    //    resultOutput[i] = result[mLengthHalf - i + mLengthHalf / 2 - 1];
+
+
+                    if (result.Length % 2 == 0)
+                    {
+                        if (i < result.Length / 2)
+                            resultOutput[i] = result[result.Length / 2 + i];
+                        else
+                            resultOutput[i] = result[i - result.Length / 2];
+                    }
                     else
-                        resultOutput[i] = result[i - mLengthHalf / 2];
+                    {
+                        if (i < result.Length / 2)
+                            resultOutput[i] = result[result.Length / 2 + i + 1];
+                        else
+                            resultOutput[i] = result[i - result.Length / 2];
+                    }
                 }
 
             }
@@ -240,11 +272,12 @@ namespace Wpf_FFT
         {
             UInt32 n = mLengthTotal;
             UInt32 m = mLengthHalf;
-            double[] re = new double[m];
-            double[] im = new double[m];
-            Complex[] result = new Complex[m];
 
-            Parallel.For(0, m, (j) =>
+            double[] re = new double[n];
+            double[] im = new double[n];
+            Complex[] result = new Complex[n];
+
+            Parallel.For(0, n, (j) =>
             //for (UInt32 j = 0; j < m; j++)
             {
                 for (UInt32 k = 0; k < n; k++)
@@ -262,7 +295,7 @@ namespace Wpf_FFT
             result[0] = new Complex(result[0].Real / Math.Sqrt(2), 0.0);
             result[mLengthHalf - 1] = new Complex(result[mLengthHalf - 1].Real / Math.Sqrt(2), 0.0);
 
-            return result;
+            return result.Take((int)mLengthHalf).ToArray();
 
 
 
@@ -282,18 +315,27 @@ namespace Wpf_FFT
         /// <returns></returns>
         public double[] FrequencySpan(double samplingFrequencyHz)
         {
-            UInt32 points = mLengthHalf;
+            //UInt32 points = mLengthHalf;
+            UInt32 points = mLengthTotal;
+
             double[] result = new double[points];
             double stopValue = samplingFrequencyHz / 2.0;
-            if (_fullFrequencyData)
-                stopValue = samplingFrequencyHz;
+            //if (_fullFrequencyData)
+            stopValue = samplingFrequencyHz;
 
-            double increment = stopValue / ((double)points - 1.0);
+            double increment = stopValue / ((double)points);
 
             for (UInt32 i = 0; i < points; i++)
                 result[i] += increment * i;
 
-            return result;
+            if (_fullFrequencyData)
+
+                return result;
+            else
+                if (mLengthTotal % 2 == 0)
+                return result.Take(result.Length / 2).ToArray();
+            else
+                return result.Take(result.Length / 2 + 1).ToArray();
         }
 
     }
@@ -400,10 +442,10 @@ namespace Wpf_FFT
             // Set global parameters.
             mLengthTotal = inputDataLength + zeroPaddingLength;
 
-            if (!_fullFrequencyData)
-                mLengthHalf = (mLengthTotal / 2) + 1;
-            else
-                mLengthHalf = mLengthTotal;
+            //if (!_fullFrequencyData)
+            mLengthHalf = (mLengthTotal / 2);
+            //else
+            //  mLengthHalf = mLengthTotal;
 
             // Set the overall scale factor for all the terms
             mFFTScale = Math.Sqrt(2) / (double)(mLengthTotal);                // Natural FFT Scale Factor                                           // Window Scale Factor
@@ -574,12 +616,17 @@ namespace Wpf_FFT
             }
             else
             {
-                for (int i = 0; i < mLengthHalf; i++)
+                for (int i = 0; i < result.Length; i++)
                 {
-                    if (i < mLengthHalf / 2)
-                        resultOutput[i] = result[mLengthHalf / 2 + i];
+                    //if (i < result.Length / 2)
+                    //    resultOutput[i] = result[result.Length / 2 + i];
+                    //else
+                    //    resultOutput[i] = result[i - result.Length / 2];
+
+                    if (i < result.Length / 2)
+                        resultOutput[i] = result[result.Length / 2 + i];
                     else
-                        resultOutput[i] = result[i - mLengthHalf / 2];
+                        resultOutput[i] = result[(i - result.Length / 2)];
                 }
 
             }
@@ -622,19 +669,26 @@ namespace Wpf_FFT
         /// <returns></returns>
         public double[] FrequencySpan(double samplingFrequencyHz)
         {
-            UInt32 points = (UInt32)mLengthHalf;
+            //UInt32 points = (UInt32)mLengthHalf;
+
+            UInt32 points = (UInt32)mLengthTotal;
+
+
             double[] result = new double[points];
             double stopValue = samplingFrequencyHz / 2.0;
 
-            if (_fullFrequencyData)
-                stopValue = samplingFrequencyHz;
+            // if (_fullFrequencyData)
+            stopValue = samplingFrequencyHz;
 
-            double increment = stopValue / ((double)points - 1.0);
+            double increment = stopValue / ((double)points);
 
             for (Int32 i = 0; i < points; i++)
                 result[i] += increment * i;
 
-            return result;
+            if (_fullFrequencyData)
+                return result;
+            else
+                return result.Take(((int)mLengthTotal) / 2).ToArray();
         }
 
         #endregion

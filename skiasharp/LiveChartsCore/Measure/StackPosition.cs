@@ -20,54 +20,51 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using LiveChartsCore.Kernel;
 using LiveChartsCore.Drawing;
+using LiveChartsCore.Kernel;
 
-namespace LiveChartsCore.Measure
+namespace LiveChartsCore.Measure;
+
+/// <summary>
+/// Defines the stack position.
+/// </summary>
+/// <typeparam name="TDrawingContext">The type of the drawing context.</typeparam>
+public class StackPosition<TDrawingContext>
+    where TDrawingContext : DrawingContext
 {
     /// <summary>
-    /// Defines the stack position.
+    /// Gets or sets the stacker.
     /// </summary>
-    /// <typeparam name="TDrawingContext">The type of the drawing context.</typeparam>
-    public class StackPosition<TDrawingContext>
-        where TDrawingContext : DrawingContext
+    /// <value>
+    /// The stacker.
+    /// </value>
+    public Stacker<TDrawingContext> Stacker { get; set; } = new();
+
+    /// <summary>
+    /// Gets or sets the position.
+    /// </summary>
+    /// <value>
+    /// The position.
+    /// </value>
+    public int Position { get; set; }
+
+    /// <summary>
+    /// Stacks the point.
+    /// </summary>
+    /// <param name="point">The point.</param>
+    /// <returns></returns>
+    public double StackPoint(ChartPoint point)
     {
-        private Stacker<TDrawingContext> stacker = new Stacker<TDrawingContext>();
+        return Stacker.StackPoint(point, Position);
+    }
 
-        /// <summary>
-        /// Gets or sets the stacker.
-        /// </summary>
-        /// <value>
-        /// The stacker.
-        /// </value>
-        public Stacker<TDrawingContext> Stacker { get => stacker; set => stacker = value; }
-
-        /// <summary>
-        /// Gets or sets the position.
-        /// </summary>
-        /// <value>
-        /// The position.
-        /// </value>
-        public int Position { get; set; }
-
-        /// <summary>
-        /// Stacks the point.
-        /// </summary>
-        /// <param name="point">The point.</param>
-        /// <returns></returns>
-        public float StackPoint(ChartPoint point)
-        {
-            return stacker.StackPoint(point, Position);
-        }
-
-        /// <summary>
-        /// Gets the stack.
-        /// </summary>
-        /// <param name="point">The point.</param>
-        /// <returns></returns>
-        public StackedValue GetStack(ChartPoint point)
-        {
-            return stacker.GetStack(point, Position);
-        }
+    /// <summary>
+    /// Gets the stack.
+    /// </summary>
+    /// <param name="point">The point.</param>
+    /// <returns></returns>
+    public StackedValue GetStack(ChartPoint point)
+    {
+        return point.StackedValue = Stacker.GetStack(point, Position);
     }
 }

@@ -20,34 +20,34 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using LiveChartsCore.Drawing;
 using System;
+using LiveChartsCore.Drawing;
+using LiveChartsCore.Kernel.Sketches;
 
-namespace LiveChartsCore.Kernel
+namespace LiveChartsCore.Kernel;
+
+/// <summary>
+/// Defines a series style rule.
+/// </summary>
+/// <typeparam name="TVisual">The type of the visual.</typeparam>
+/// <typeparam name="TDrawingContext">The type of the drawing context.</typeparam>
+public class SeriesStyleRule<TVisual, TDrawingContext>
+    where TDrawingContext : DrawingContext
+    where TVisual : IGeometry<TDrawingContext>
 {
     /// <summary>
-    /// Defiens a series style rule.
+    /// Gets or sets the series properties.
     /// </summary>
-    /// <typeparam name="TVisual">The type of the visual.</typeparam>
-    /// <typeparam name="TDrawingContext">The type of the drawing context.</typeparam>
-    public class SeriesStyleRule<TVisual, TDrawingContext>
-        where TDrawingContext : DrawingContext
-        where TVisual : IVisualChartPoint<TDrawingContext>
-    {
-        /// <summary>
-        /// Gets or sets the series properties.
-        /// </summary>
-        /// <value>
-        /// The series properties.
-        /// </value>
-        public SeriesProperties SeriesProperties { get; set; }
+    /// <value>
+    /// The series properties.
+    /// </value>
+    public SeriesProperties SeriesProperties { get; set; }
 
-        /// <summary>
-        /// Gets or sets the rule.
-        /// </summary>
-        /// <value>
-        /// The rule.
-        /// </value>
-        public Action<IDrawableSeries<TDrawingContext>>? Rule { get; set; }
-    }
+    /// <summary>
+    /// Gets or sets the rule.
+    /// </summary>
+    /// <value>
+    /// The rule.
+    /// </value>
+    public Action<IChartSeries<TDrawingContext>>? Rule { get; set; }
 }
