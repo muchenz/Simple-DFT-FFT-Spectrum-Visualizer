@@ -64,6 +64,11 @@
                         <MenuItem Header="_File">
                             <MenuItem x:Name="AppExit" Header="E_xit" HorizontalAlignment="Left" Width="140"/>
                         </MenuItem>
+                        <MenuItem Header="_Options">
+                            <CheckBox  IsChecked="{Binding IsCopyNyquist}" >
+                                <Label Margin="2 -7 0 0" FontSize="14"  Content="Copy Nyquist bin for symmetry of the graph"/>
+                            </CheckBox>
+                        </MenuItem>
 
                         <MenuItem Header="_Help">
                             <MenuItem x:Name="About" Header="About" HorizontalAlignment="Left" Width="140"  Command="{Binding AboutCommand}"/>
@@ -105,15 +110,15 @@
                             <GroupBox.Header>
                                 <TextBlock FontSize="12">Compute</TextBlock>
                             </GroupBox.Header>
-                            <StackPanel Margin="80 5 0 5" Orientation="Vertical" HorizontalAlignment="Stretch">
+                            <StackPanel Margin="20 5 0 5" Orientation="Vertical" HorizontalAlignment="Stretch">
                                 <RadioButton IsChecked="{Binding IsFFT}">
                                     <Label Margin="0 -10 0 0" Content="FFT"/>
                                 </RadioButton>
                                 <RadioButton>
                                     <Label Margin="0 -10 0 0" Content="DFT"/>
                                 </RadioButton>
-                                <CheckBox  IsChecked="{Binding IsShift}" Command="{Binding ShiftCommand}">
-                                    <Label Margin="0 -10 0 0" Content="Shift"/>
+                                <CheckBox  IsChecked="{Binding IsFullSpectrum}" Command="{Binding FullSpectrumCommand}">
+                                    <Label Margin="0 -10 0 0" Content="Full Spectrum"/>
                                 </CheckBox>
                             </StackPanel>
                         </GroupBox>
@@ -136,6 +141,9 @@
                                 </RadioButton>
                                 <RadioButton Command="{Binding PhaseCommand}" GroupName="ChartGroup">
                                     <Label Margin="0 -10 0 0" Content="Phase"/>
+                                </RadioButton>
+                                <RadioButton Command="{Binding BinsCommand}" GroupName="ChartGroup">
+                                    <Label Margin="0 -10 0 0" Content="Bins"/>
                                 </RadioButton>
                             </StackPanel>
                         </GroupBox>

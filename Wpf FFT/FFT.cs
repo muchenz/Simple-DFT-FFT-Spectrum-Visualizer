@@ -107,7 +107,7 @@ namespace Wpf_FFT
                 if (mLengthTotal % 2 == 0)
                 {
                     // is_even
-                    mLengthHalf = (mLengthTotal / 2);// - 1;
+                    mLengthHalf = (mLengthTotal / 2) + 1;// - 1;
                 }
                 else
                 {
@@ -222,7 +222,7 @@ namespace Wpf_FFT
 
         }
 
-        public Complex[] ShiftData(Complex[] result, bool shift)
+        public Complex[] ShiftData(Complex[] result, bool shift = true, bool copyNiquistForSimietric = true)
         {
 
             var resultOutput = new Complex[result.Length];
@@ -244,10 +244,10 @@ namespace Wpf_FFT
 
                     if (result.Length % 2 == 0)
                     {
-                        if (i < result.Length / 2)
-                            resultOutput[i] = result[result.Length / 2 + i];
+                        if (i < result.Length / 2 - 1)
+                            resultOutput[i] = result[result.Length / 2 + i + 1];
                         else
-                            resultOutput[i] = result[i - result.Length / 2];
+                            resultOutput[i] = result[i - result.Length / 2 + 1];
                     }
                     else
                     {
@@ -259,6 +259,19 @@ namespace Wpf_FFT
                 }
 
             }
+
+            // last bin (when amount bins is even) is niquist frq, copy for chart symmetry
+            if (result.Length % 2 == 0 && copyNiquistForSimietric)
+            {
+                var list = resultOutput.ToList();
+                list.Insert(0, resultOutput[^1]);
+
+                return list.ToArray();
+
+            }
+
+
+
             return resultOutput;
         }
         /// <summary>
@@ -333,9 +346,9 @@ namespace Wpf_FFT
                 return result;
             else
                 if (mLengthTotal % 2 == 0)
-                return result.Take(result.Length / 2).ToArray();
+                return result.Take((int)mLengthHalf).ToArray();
             else
-                return result.Take(result.Length / 2 + 1).ToArray();
+                return result.Take((int)mLengthHalf).ToArray();
         }
 
     }
@@ -443,7 +456,7 @@ namespace Wpf_FFT
             mLengthTotal = inputDataLength + zeroPaddingLength;
 
             //if (!_fullFrequencyData)
-            mLengthHalf = (mLengthTotal / 2);
+            mLengthHalf = (mLengthTotal / 2) + 1;
             //else
             //  mLengthHalf = mLengthTotal;
 
@@ -604,7 +617,7 @@ namespace Wpf_FFT
         }
 
 
-        public Complex[] ShiftData(Complex[] result, bool shift = true)
+        public Complex[] ShiftData(Complex[] result, bool shift = true, bool copyNiquistForSimietric = true)
         {
 
             var resultOutput = new Complex[result.Length];
@@ -623,13 +636,25 @@ namespace Wpf_FFT
                     //else
                     //    resultOutput[i] = result[i - result.Length / 2];
 
-                    if (i < result.Length / 2)
-                        resultOutput[i] = result[result.Length / 2 + i];
+                    if (i < result.Length / 2 - 1)
+                        resultOutput[i] = result[result.Length / 2 + i + 1];
                     else
-                        resultOutput[i] = result[(i - result.Length / 2)];
+                        resultOutput[i] = result[(i - result.Length / 2 + 1)];
                 }
 
             }
+
+            // last bin (when amount bins is even) is niquist frq, copy for chart symmetry
+            if (result.Length % 2 == 0 && copyNiquistForSimietric)
+            {
+                var list = resultOutput.ToList();
+                list.Insert(0, resultOutput[^1]);
+
+                return list.ToArray();
+
+            }
+
+
             return resultOutput;
         }
 
@@ -688,7 +713,7 @@ namespace Wpf_FFT
             if (_fullFrequencyData)
                 return result;
             else
-                return result.Take(((int)mLengthTotal) / 2).ToArray();
+                return result.Take((int)mLengthHalf).ToArray();
         }
 
         #endregion

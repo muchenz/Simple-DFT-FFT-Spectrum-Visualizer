@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -22,13 +23,18 @@ namespace Wpf_FFT.View
     public partial class AboutWindow : Window, IDialog
     {
         public AboutWindow()
-        { 
+        {
             InitializeComponent();
         }
 
         private void Hyperlink_Click(object sender, RoutedEventArgs e)
         {
-            System.Diagnostics.Process.Start("https://github.com/muchenz/RefreshRateWpfApp");
+            var pi = new ProcessStartInfo("https://github.com/muchenz/Simple-DFT-FFT-Spectrum-Visualizer")
+            {
+                UseShellExecute = true
+            };
+
+            System.Diagnostics.Process.Start(pi);
         }
 
         private void HyperlinkWiki_Click(object sender, RoutedEventArgs e)
