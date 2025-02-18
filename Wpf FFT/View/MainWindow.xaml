@@ -127,34 +127,26 @@
                                 <TextBlock FontSize="12">Bottom Chart</TextBlock>
                             </GroupBox.Header>
                             <StackPanel  Orientation="Horizontal">
-                                <StackPanel Margin="0 5 0 5">
-                                    <RadioButton IsChecked="{Binding IsRMS}" GroupName="rms">
-                                        <Label Margin="0 -10 0 0" Content="RMS"/>
+                                <StackPanel Margin="100 5 0 5" Orientation="Vertical" HorizontalAlignment="Stretch">
+                                    <RadioButton IsChecked="{Binding IsMagnitude}" Command="{Binding MagnitudeCommand}" GroupName="ChartGroup">
+                                        <Label Margin="0 -10 0 0" Content="Mag"/>
                                     </RadioButton>
-                                    <RadioButton GroupName="rms">
-                                        <Label Margin="0 -10 0 0" Content="Amp." />
+                                    <RadioButton Command="{Binding MagnitudeDBVCommand}" GroupName="ChartGroup">
+                                        <Label Margin="0 -10 0 0" Content="dBV"/>
+                                    </RadioButton>
+                                    <RadioButton Command="{Binding ImaginaryCommand}" GroupName="ChartGroup">
+                                        <Label Margin="0 -10 0 0" Content="Img"/>
+                                    </RadioButton>
+                                    <RadioButton Command="{Binding RealCommand}" GroupName="ChartGroup">
+                                        <Label Margin="0 -10 0 0" Content="Real"/>
+                                    </RadioButton>
+                                    <RadioButton Command="{Binding PhaseCommand}" GroupName="ChartGroup">
+                                        <Label Margin="0 -10 0 0" Content="Phase"/>
+                                    </RadioButton>
+                                    <RadioButton Command="{Binding BinsCommand}" GroupName="ChartGroup">
+                                        <Label Margin="0 -10 0 0" Content="Bins"/>
                                     </RadioButton>
                                 </StackPanel>
-                                <StackPanel Margin="40 5 0 5" Orientation="Vertical" HorizontalAlignment="Stretch">
-                                <RadioButton IsChecked="{Binding IsMagnitude}" Command="{Binding MagnitudeCommand}" GroupName="ChartGroup">
-                                    <Label Margin="0 -10 0 0" Content="Mag"/>
-                                </RadioButton>
-                                <RadioButton Command="{Binding MagnitudeDBVCommand}" GroupName="ChartGroup">
-                                    <Label Margin="0 -10 0 0" Content="dBV"/>
-                                </RadioButton>
-                                <RadioButton Command="{Binding ImaginaryCommand}" GroupName="ChartGroup">
-                                    <Label Margin="0 -10 0 0" Content="Img"/>
-                                </RadioButton>
-                                <RadioButton Command="{Binding RealCommand}" GroupName="ChartGroup">
-                                    <Label Margin="0 -10 0 0" Content="Real"/>
-                                </RadioButton>
-                                <RadioButton Command="{Binding PhaseCommand}" GroupName="ChartGroup">
-                                    <Label Margin="0 -10 0 0" Content="Phase"/>
-                                </RadioButton>
-                                <RadioButton Command="{Binding BinsCommand}" GroupName="ChartGroup">
-                                    <Label Margin="0 -10 0 0" Content="Bins"/>
-                                </RadioButton>
-                            </StackPanel>
                             </StackPanel>
                         </GroupBox>
                     </StackPanel>
