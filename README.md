@@ -16,3 +16,4 @@ Download:
 * Added bins chart
 * Added Nyquist bin option for symmerty of chart
 * Added Impulse train to examples
+* Added RMS/Amp. switch
