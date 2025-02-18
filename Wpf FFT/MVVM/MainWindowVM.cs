@@ -304,17 +304,6 @@ namespace Wpf_FFT.MVVM
             }
         }
 
-        bool _isRMS = true;
-        public bool IsRMS
-        {
-            get { return _isRMS; }
-            set
-            {
-                _isRMS = value;
-                NotifyPropertyChanged();
-            }
-        }
-
         void refreshPtsAndZeros()
         {
             NotifyPropertyChanged(nameof(ZerosNumber));
@@ -386,20 +375,12 @@ namespace Wpf_FFT.MVVM
             double windowScaleFactor = DSP.Window.ScaleFactor.Signal(wc);
             double[] windowedTimeSeries = DSP.Math.Multiply(inputSignal, wc);
 
-            double[] windowedTimeSeriesForBins = windowedTimeSeries.ToArray();
-
-            if (_isRMS is false)  // for amplitude
-            {
-                double rms = Math.Sqrt(windowedTimeSeriesForBins.Select(x => x * x).Average());
-                windowedTimeSeriesForBins = DSP.Math.Multiply(windowedTimeSeriesForBins, 1/rms);
-            }
-
             _oldIsFullSpectrumValue = IsFullSpectrum;
             if (IsFFT)
             {
                 FFT fft = new();
                 fft.Initialize(lengthSample, zeros, fullFrequencyData: IsFullSpectrum);
-                _cSpectrum = fft.Execute(windowedTimeSeriesForBins);
+                _cSpectrum = fft.Execute(windowedTimeSeries);
 
                 _cSpectrumCopyBeforeShift = _cSpectrum;
                 _cSpectrum = fft.ShiftData(_cSpectrum, IsFullSpectrum, IsCopyNyquist);
@@ -415,7 +396,7 @@ namespace Wpf_FFT.MVVM
 
                 dft.Initialize(lengthSample, zeros, fullFrequency: IsFullSpectrum);
                 // Call the DFT and get the scaled spectrum back
-                _cSpectrum = dft.Execute(windowedTimeSeriesForBins);
+                _cSpectrum = dft.Execute(windowedTimeSeries);
                 _cSpectrumCopyBeforeShift = _cSpectrum;
 
                 _cSpectrum = dft.ShiftData(_cSpectrum, IsFullSpectrum, IsCopyNyquist);
