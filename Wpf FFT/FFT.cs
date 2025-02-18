@@ -346,9 +346,9 @@ namespace Wpf_FFT
                 return result;
             else
                 if (mLengthTotal % 2 == 0)
-                return result.Take((int)mLengthHalf).ToArray();
-            else
-                return result.Take((int)mLengthHalf).ToArray();
+                    return result.Take((int)mLengthHalf).ToArray();
+                else
+                    return result.Take((int)mLengthHalf).ToArray();
         }
 
     }
@@ -617,7 +617,7 @@ namespace Wpf_FFT
         }
 
 
-        public Complex[] ShiftData(Complex[] result, bool shift = true, bool copyNiquistForSimietric = true)
+        public Complex[] ShiftData(Complex[] result, bool shift = true, bool copyNiquistForSymmetric = true)
         {
 
             var resultOutput = new Complex[result.Length];
@@ -645,7 +645,7 @@ namespace Wpf_FFT
             }
 
             // last bin (when amount bins is even) is niquist frq, copy for chart symmetry
-            if (result.Length % 2 == 0 && copyNiquistForSimietric)
+            if (result.Length % 2 == 0 && copyNiquistForSymmetric)
             {
                 var list = resultOutput.ToList();
                 list.Insert(0, resultOutput[^1]);
