@@ -5,6 +5,7 @@ using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Navigation;
 using Unity;
 using Wpf_FFT.MVVM;
 using Wpf_FFT.Service;
@@ -20,7 +21,7 @@ namespace Wpf_FFT
         public static UnityContainer Container { get; set; }
         public App()
         {
-            InitContainer();
+            //InitContainer();
         }
 
         private void InitContainer()
@@ -39,6 +40,18 @@ namespace Wpf_FFT
             var mainWindow = Container.Resolve<MainWindow>();
             
             mainWindow.Show();
+        }
+
+        /// <summary>
+        /// MainWindow start must after App initialization because
+        /// App load Styles and Resources. 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        protected private void Application_Startup(object sender, StartupEventArgs e)
+        {
+            InitContainer();
+
         }
     }
 }

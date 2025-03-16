@@ -17,10 +17,10 @@
         <Style TargetType="Label" x:Key="ExampleLabelStyle">
             <Setter Property="FontSize" Value="14"/>
         </Style>
-        <Style TargetType="Button" x:Key="ExampleButtonStyle">
+        <Style TargetType="Button" x:Key="ExampleButtonStyle" BasedOn="{StaticResource NewButtonStyle}">
             <Setter Property="FontSize" Value="14"/>
             <Setter Property="Margin" Value="1"/>
-            <Setter Property="Height" Value="23"/>
+            <Setter Property="Height" Value="26"/>
         </Style>
     </Window.Resources>
     <Grid>
