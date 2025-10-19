@@ -800,7 +800,7 @@ namespace Wpf_FFT
                 return rval;
             }
 
-            public static double[] ToneSampling2(Func<double, double, double> func, double frequencyHz, double samplingFrequencyHz, UInt32 points)
+            public static double[] ToneSamplingFromFunc(Func<double, double, double> func, double frequencyHz, double samplingFrequencyHz, UInt32 points)
             {
 
                 double[] rval = new double[points];

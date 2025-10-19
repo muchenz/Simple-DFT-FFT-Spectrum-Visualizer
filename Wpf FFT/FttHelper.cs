@@ -22,7 +22,7 @@ namespace Wpf_FFT
         public static double[] GetInputData(double frequency, uint length, double samplingRate, Argument timeArg, 
             Argument frequencyArg, Expression expression)
         {
-            return DSP.Generate.ToneSampling2((time, freq) =>
+            return DSP.Generate.ToneSamplingFromFunc((time, freq) =>
             {
 
                 timeArg.setArgumentValue(time);
