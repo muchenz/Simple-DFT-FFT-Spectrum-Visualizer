@@ -1,8 +1,10 @@
 ﻿using System;
-using System.Numerics;
-using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Linq;
+using System.Numerics;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
+using System.Threading.Tasks;
 
 // 2021 some modyfication by muchenz to better fit in my visualiser
 
@@ -133,15 +135,19 @@ namespace Wpf_FFT
             // use a brute force DFT.
             // Note: pre-calculation speeds the DFT up by about 5X (on a core i7)
             mOutOfMemory = false;
+            return;
+
             try
             {
                 mCosTerm = new double[mLengthTotal, mLengthTotal];
                 mSinTerm = new double[mLengthTotal, mLengthTotal];
-
+                                
                 double scaleFactor = 2.0 * Math.PI / mLengthTotal;
 
+                Stopwatch sw = Stopwatch.StartNew();
                 //Parallel.For(0, mLengthHalf, (j) =>
-                for (int j = 0; j < mLengthTotal; j++)
+                Parallel.For(0, mLengthTotal, (j) =>
+                //for (int j = 0; j < mLengthTotal; j++)
                 {
                     double a = j * scaleFactor;
                     for (int k = 0; k < mLengthTotal; k++)
@@ -149,7 +155,10 @@ namespace Wpf_FFT
                         mCosTerm[j, k] = Math.Cos(a * k) * mDFTScale;
                         mSinTerm[j, k] = Math.Sin(a * k) * mDFTScale;
                     }
-                } //);
+                } );
+                sw.Stop();
+                Trace.WriteLine($"Time to generate sin/cos cache array: {sw.ElapsedMilliseconds} ");
+                
             }
             catch (OutOfMemoryException)
             {
@@ -177,8 +186,13 @@ namespace Wpf_FFT
             if (mOutOfMemory)
                 output = Dft(totalInputData);
             else
-                output = DftCached(totalInputData);
+            {
+                var sw = Stopwatch.StartNew();
+                output = DftAVX(totalInputData);
+                sw.Stop();  
+                Trace.WriteLine($"Time to generate DTF: {sw.ElapsedMilliseconds} ");
 
+            }
             return output;
         }
 
@@ -220,6 +234,119 @@ namespace Wpf_FFT
             return result.Take((int)mLengthHalf).ToArray();
 
 
+        }
+
+
+        private unsafe Complex[] DftAVX(double[] timeSeries)
+        {
+            // Rzutowanie na int dla Parallel.For
+            int n = (int)mLengthTotal;
+            int m = (int)mLengthHalf;
+
+            // Alokacja wyników
+            Complex[] result = new Complex[n];
+
+            // Stała kątowa
+            double sf = 2.0 * Math.PI / n;
+
+            if (!Avx.IsSupported)
+            {
+                throw new NotSupportedException("CPU nie obsługuje AVX.");
+            }
+
+            // 1. Blokowanie pamięci (tylko timeSeries, bo re/im są lokalne lub w result)
+            fixed (double* pTimeSeries = timeSeries)
+            {
+                // Rzutowanie wskaźnika na bezpieczny typ do przekazania do lambdy
+                IntPtr ptrTimeSeries = (IntPtr)pTimeSeries;
+
+                // Równoległa pętla po częstotliwościach (j)
+                Parallel.For(0, n, (j) =>
+                {
+                    double* rawTimeSeries = (double*)ptrTimeSeries;
+
+                    // Zmienne lokalne do sumowania (zamiast tablic re[] im[])
+                    // Dzięki temu unikamy ciągłego pisania do pamięci RAM
+                    Vector256<double> vRe = Vector256<double>.Zero;
+                    Vector256<double> vIm = Vector256<double>.Zero;
+
+                    double sumRe = 0.0;
+                    double sumIm = 0.0;
+
+                    double a = j * sf; // Krok kątowy dla danej częstotliwości j
+
+                    int k = 0;
+
+                    // Główna pętla AVX (krok co 4)
+                    for (; k <= n - 4; k += 4)
+                    {
+                        // 1. Ładowanie 4 próbek sygnału
+                        Vector256<double> vTime = Avx.LoadVector256(rawTimeSeries + k);
+
+                        // 2. Obliczanie 4 kątów
+                        // Niestety C# nie ma Avx.Cos, musimy policzyć to skalarnie i spakować
+                        double ang0 = a * k;
+                        double ang1 = a * (k + 1);
+                        double ang2 = a * (k + 2);
+                        double ang3 = a * (k + 3);
+
+                        // Tworzenie wektorów Cos i Sin
+                        // Create jest dość tanie, a Math.Cos/Sin jest wąskim gardłem (bottleneck)
+                        Vector256<double> vCos = Vector256.Create(
+                            Math.Cos(ang0), Math.Cos(ang1), Math.Cos(ang2), Math.Cos(ang3));
+
+                        Vector256<double> vSin = Vector256.Create(
+                            Math.Sin(ang0), Math.Sin(ang1), Math.Sin(ang2), Math.Sin(ang3));
+
+                        // 3. Mnożenie wektorowe (FMA)
+                        // re += time * cos
+                        vRe = Avx.Add(vRe, Avx.Multiply(vTime, vCos));
+
+                        // im -= time * sin
+                        vIm = Avx.Subtract(vIm, Avx.Multiply(vTime, vSin));
+                    }
+
+                    // Sumowanie poziome (redukcja wektorów do liczby)
+                    sumRe = vRe.GetElement(0) + vRe.GetElement(1) + vRe.GetElement(2) + vRe.GetElement(3);
+                    sumIm = vIm.GetElement(0) + vIm.GetElement(1) + vIm.GetElement(2) + vIm.GetElement(3);
+
+                    // Pętla kończąca (Tail loop)
+                    for (; k < n; k++)
+                    {
+                        double angle = a * k;
+                        double val = rawTimeSeries[k];
+                        sumRe += val * Math.Cos(angle);
+                        sumIm -= val * Math.Sin(angle);
+                    }
+
+                    // OPTYMALIZACJA: Skalowanie na samym końcu!
+                    // Zamiast mnożyć N razy w pętli przez mDFTScale, robimy to raz tutaj.
+                    // Wynik jest matematycznie ten sam.
+                    sumRe *= mDFTScale;
+                    sumIm *= mDFTScale;
+
+                    // Zapisz wynik bezpośrednio do tablicy result
+                    result[j] = new Complex(sumRe, sumIm);
+                });
+            }
+
+            // Logika zwracania wyników (zgodna z oryginałem)
+            if (_fullFrequencyData) return result;
+
+            // Skalowanie punktów DC i Nyquista
+            // Odwołujemy się do result, który już mamy policzony
+            if (n > 0)
+            {
+                result[0] = new Complex(result[0].Real / Math.Sqrt(2), 0.0);
+            }
+
+            if (mLengthHalf - 1 < n)
+            {
+                int idx = (int)mLengthHalf - 1;
+                result[idx] = new Complex(result[idx].Real / Math.Sqrt(2), 0.0);
+            }
+
+            return result.Take(m).ToArray();
         }
 
         public Complex[] ShiftData(Complex[] result, bool shift = true, bool copyNiquistForSimietric = true)
@@ -300,6 +427,101 @@ namespace Wpf_FFT
                 }
                 result[j] = new Complex(re[j], im[j]);
             });
+
+
+            if (_fullFrequencyData) return result;
+
+            //// DC and Fs/2 Points are scaled differently, since they have only a real part
+            result[0] = new Complex(result[0].Real / Math.Sqrt(2), 0.0);
+            result[mLengthHalf - 1] = new Complex(result[mLengthHalf - 1].Real / Math.Sqrt(2), 0.0);
+
+            return result.Take((int)mLengthHalf).ToArray();
+
+
+
+        }
+
+         private unsafe Complex[] DftCachedAVX(double[] timeSeries)
+        {
+            UInt32 n = mLengthTotal;
+            // UInt32 m = mLengthHalf; // W twoim kodzie zakomentowane, używam n z Parallel.For
+
+            Complex[] result = new Complex[n];
+
+            // Sprawdzenie czy AVX jest obsługiwane (opcjonalne, ale zalecane)
+            if (!Avx.IsSupported)
+            {
+                throw new NotSupportedException("Procesor nie obsługuje instrukcji AVX.");
+            }
+
+            // Blokujemy pamięć tablic, aby Garbage Collector ich nie przesunął
+            fixed (double* pTimeSeries = timeSeries)
+            fixed (double* pCosTerm = mCosTerm)
+            fixed (double* pSinTerm = mSinTerm)
+            {
+
+                IntPtr ptrTimeSeries = (IntPtr)pTimeSeries;
+                IntPtr ptrCosTerm = (IntPtr)pCosTerm;
+                IntPtr ptrSinTerm = (IntPtr)pSinTerm;
+
+                Parallel.For(0, n, (j) =>
+                {
+
+                    double* rawTimeSeries = (double*)ptrTimeSeries;
+                    double* rawCosTerm = (double*)ptrCosTerm; // Początek całej macierzy Cos
+                    double* rawSinTerm = (double*)ptrSinTerm; // Początek całej macierzy Sin
+
+                    double sumRe = 0.0;
+                    double sumIm = 0.0;
+
+                    // Wskaźniki na początek wiersza dla danego j w macierzach 2D
+                    // Zakładamy, że tablice [,] są upakowane wierszami (row-major)
+                    double* pCosRow = rawCosTerm + (j * n);
+                    double* pSinRow = rawSinTerm + (j * n);
+
+                    // Inicjalizacja wektorów akumulacyjnych zerami
+                    Vector256<double> vRe = Vector256<double>.Zero;
+                    Vector256<double> vIm = Vector256<double>.Zero;
+
+                    UInt32 k = 0;
+
+                    // Główna pętla wektorowa (krok co 4, bo 256 bitów / 64 bity = 4 double)
+                    // Wykonujemy dopóki mamy pełne czwórki elementów
+                    for (; k <= n - 4; k += 4)
+                    {
+                        // Ładowanie danych do rejestrów AVX
+                        Vector256<double> vTime = Avx.LoadVector256(rawTimeSeries + k);
+                        Vector256<double> vCos = Avx.LoadVector256(rawCosTerm + k);
+                        Vector256<double> vSin = Avx.LoadVector256(pSinRow + k);
+
+                        // Obliczenia: re += time * cos
+                        Vector256<double> vMulRe = Avx.Multiply(vTime, vCos);
+                        vRe = Avx.Add(vRe, vMulRe);
+
+                        // Obliczenia: im -= time * sin
+                        // Możemy użyć FMA (Fused Multiply-Add) jeśli dostępne, ale tu trzymamy się czystego AVX
+                        Vector256<double> vMulIm = Avx.Multiply(vTime, vSin);
+                        vIm = Avx.Subtract(vIm, vMulIm);
+                    }
+
+                    // Sumowanie poziome (redukcja wektora do jednej liczby)
+                    // Vector256 to [A, B, C, D]. Musimy obliczyć A+B+C+D.
+                    // Najprostszy sposób w C# bez AVX2/instrukcji hadd:
+                    sumRe += vRe.GetElement(0) + vRe.GetElement(1) + vRe.GetElement(2) + vRe.GetElement(3);
+                    sumIm += vIm.GetElement(0) + vIm.GetElement(1) + vIm.GetElement(2) + vIm.GetElement(3);
+
+                    // Pętla kończąca (tzw. tail loop)
+                    // Obsługuje pozostałe elementy, jeśli n nie jest podzielne przez 4
+                    for (; k < n; k++)
+                    {
+                        double val = rawTimeSeries[k];
+                        sumRe += val * pCosRow[k];
+                        sumIm -= val * pSinRow[k];
+                    }
+
+                    result[j] = new Complex(sumRe, sumIm);
+                });
+            }
 
 
             if (_fullFrequencyData) return result;

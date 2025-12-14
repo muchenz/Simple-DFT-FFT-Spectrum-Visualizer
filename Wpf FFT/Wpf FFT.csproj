@@ -13,6 +13,9 @@
     <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
     <ApplicationIcon>ikona FFT2.ico</ApplicationIcon>
     <Version>1.0.0.4</Version>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+	  <!--<PublishAot>true</PublishAot>
+	  <PublishTrimmed>false</PublishTrimmed>-->
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
