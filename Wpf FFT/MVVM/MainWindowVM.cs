@@ -248,7 +248,12 @@ namespace Wpf_FFT.MVVM
 
                 }
 
-                return ErrorMessage = null;
+                if (_errorProperties.Count == 0)
+                {
+                    ErrorMessage = string.Empty;
+                }
+
+                return null;
             }
         }
 
