@@ -100,7 +100,7 @@ namespace Wpf_FFT.MVVM
                 {
 
                     //System.Diagnostics.Trace.WriteLine("a");
-                    return string.IsNullOrEmpty(ErrorMessage);
+                    return _errorProperties.Count == 0;
                 });
                 // PropertyChanged += t.NotifyMaybyExecuteChanged;
                 return t;
@@ -171,6 +171,7 @@ namespace Wpf_FFT.MVVM
 
         public string Error => throw new NotImplementedException();
 
+        private HashSet<string> _errorProperties = new();
         public string this[string columnName]
         {
             get
@@ -184,32 +185,53 @@ namespace Wpf_FFT.MVVM
                     org.mariuszgromada.math.mxparser.Expression func = new(FunctionToFFT, timeArg, frequencyArg);
 
                     if (!func.checkSyntax())
+                    {
+                        _errorProperties.Add(columnName);
                         return ErrorMessage = "Function Syntax Error";
+                    }
+                    _errorProperties.Remove(columnName);
                 }
                 else if (columnName == nameof(Frequency))
                 {
                     double d;
                     if (!double.TryParse(Frequency, System.Globalization.NumberStyles.Any, cultureUS, out d))
+                    {
+                        _errorProperties.Add(columnName);
                         return ErrorMessage = "'Frequerency' field error";
+                    }
+                    _errorProperties.Remove(columnName);
                 }
                 else if (columnName == nameof(Lenght))
                 {
                     double d;
                     if (!double.TryParse(Lenght, System.Globalization.NumberStyles.Any, cultureUS, out d))
+                    {
+                        _errorProperties.Add(columnName);
                         return ErrorMessage = "'Number of pts' field error";
+                    }
+                    _errorProperties.Remove(columnName);
 
                 }
                 else if (columnName == nameof(SamplingFrequency))
                 {
                     double d;
                     if (!double.TryParse(SamplingFrequency, System.Globalization.NumberStyles.Any, cultureUS, out d))
+                    {
+                        _errorProperties.Add(columnName);
                         return ErrorMessage = "'Sampling Frequency' field error";
+                    }
+                    _errorProperties.Remove(columnName);
                 }
                 else if (columnName == nameof(ZerosNumber))
                 {
                     uint d;
                     if (!uint.TryParse(ZerosNumber, System.Globalization.NumberStyles.Any, cultureUS, out d))
+                    {
+                        _errorProperties.Add(columnName);
                         return ErrorMessage = "'Number od zeros' field error";
+                    }
+                    _errorProperties.Remove(columnName);
+
                 }
 
                 if (IsFFT && (columnName == nameof(Lenght) || columnName == nameof(ZerosNumber)))
@@ -218,7 +240,12 @@ namespace Wpf_FFT.MVVM
                     var d = UInt32.Parse(Lenght, cultureUS) + uint.Parse(ZerosNumber, cultureUS);
 
                     if (!(Math.Log2(d) == ((double)((int)Math.Log2(d)))))
+                    {
+                        _errorProperties.Add(columnName);
                         return ErrorMessage = "Sum 'Number of pts' and 'Zeros' must be power of 2";
+                    }
+                    _errorProperties.Remove(columnName);
+
                 }
 
                 return ErrorMessage = null;
