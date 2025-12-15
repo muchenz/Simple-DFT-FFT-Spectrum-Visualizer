@@ -310,7 +310,7 @@ namespace Wpf_FFT
                         Vector256<double> vTime = Avx.LoadVector256(rawTimeSeries + k);
 
 
-                        // Trigonometric recurrence (angle addition formula)
+                        // Trigonometric recurrence (angle addition formula) ------------- fast version ----------------
                         //
                         // We exploit the identities:
                         //   sin(x + Δ) = sin(x) * cos(Δ) + cos(x) * sin(Δ)
@@ -326,7 +326,7 @@ namespace Wpf_FFT
                         // without calling Math.Sin / Math.Cos inside the loop.
                         // Each next value is derived from the previous one using only
                         // multiplications and additions, which is significantly faster.
-                     
+
                         //
                         // sin1, cos1 correspond to angle a * (k + 1)
                         // sin2, cos2 correspond to angle a * (k + 2)
@@ -344,14 +344,31 @@ namespace Wpf_FFT
                         Vector256<double> vSin = Vector256.Create(sin0, sin1, sin2, sin3);
                         Vector256<double> vCos = Vector256.Create(cos0, cos1, cos2, cos3);
 
+                        sin0 = sin3 * cosD + cos3 * sinD;
+                        cos0 = cos3 * cosD - sin3 * sinD;
+                        //--------------------------------------------------------------------------------------
+
+                        //---- slower wersion ----------------------------------------------------------
+
+                        //double ang0 = a * k;
+                        //double ang1 = a * (k + 1);
+                        //double ang2 = a * (k + 2);
+                        //double ang3 = a * (k + 3);
+
+                        //Vector256<double> vCos = Vector256.Create(
+                        //    Math.Cos(ang0), Math.Cos(ang1), Math.Cos(ang2), Math.Cos(ang3));
+
+                        //Vector256<double> vSin = Vector256.Create(
+                        //    Math.Sin(ang0), Math.Sin(ang1), Math.Sin(ang2), Math.Sin(ang3));
+                        //--------------------------------------------------------------------------------------
+
                         // re += time * cos
                         vRe = Avx.Add(vRe, Avx.Multiply(vTime, vCos));
 
                         // im -= time * sin
                         vIm = Avx.Subtract(vIm, Avx.Multiply(vTime, vSin));
 
-                        sin0 = sin3 * cosD + cos3 * sinD;
-                        cos0 = cos3 * cosD - sin3 * sinD;
+                        
                     }
 
                     // Horizontal sum (reduce vectors to scalars)
