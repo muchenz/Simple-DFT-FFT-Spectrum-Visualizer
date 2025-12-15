@@ -80,6 +80,8 @@ namespace Wpf_FFT
             get { return !mOutOfMemory; }
         }
 
+        bool _AVXoff = false;
+
         #endregion
 
         #region Core DFT Routines
@@ -91,8 +93,10 @@ namespace Wpf_FFT
         /// <param name="inputDataLength"></param>
         /// <param name="zeroPaddingLength"></param>
         /// <param name="forceNoCache">True will force the DFT to not use pre-calculated caching.</param>
-        public void Initialize(UInt32 inputDataLength, UInt32 zeroPaddingLength = 0, bool forceNoCache = false, bool fullFrequency = false)
+        public void Initialize(UInt32 inputDataLength, UInt32 zeroPaddingLength = 0, bool forceNoCache = false, bool fullFrequency = false,
+            bool AXVoff = false)
         {
+            _AVXoff = AXVoff;
             _fullFrequencyData = fullFrequency;
             // Save the sizes for later
             mLengthTotal = inputDataLength + zeroPaddingLength;
@@ -185,7 +189,7 @@ namespace Wpf_FFT
             if (mOutOfMemory)
             {
                 var sw = Stopwatch.StartNew();
-                if (IsAVXAvailable)
+                if (IsAVXAvailable && _AVXoff)
                 {
                     output = DftAVX(totalInputData);
                 }else
@@ -198,7 +202,7 @@ namespace Wpf_FFT
             else
             {
                 var sw = Stopwatch.StartNew();
-                if (IsAVXAvailable)
+                if (IsAVXAvailable && _AVXoff)
                 {
                     output = DftCachedAVX(totalInputData);
                 }else
