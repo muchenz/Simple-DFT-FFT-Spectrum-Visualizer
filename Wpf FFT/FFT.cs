@@ -166,7 +166,7 @@ namespace Wpf_FFT
                 mOutOfMemory = true;
             }
         }
-
+        public static bool IsAVXAvailable => Avx.IsSupported;
 
         /// <summary>
         /// Execute the DFT.
@@ -185,14 +185,26 @@ namespace Wpf_FFT
             if (mOutOfMemory)
             {
                 var sw = Stopwatch.StartNew();
-                output = DftAVX(totalInputData);
+                if (IsAVXAvailable)
+                {
+                    output = DftAVX(totalInputData);
+                }else
+                {
+                    output = Dft(totalInputData);
+                }
                 sw.Stop();
                 Trace.WriteLine($"Time to generate DTF with AVX: {sw.ElapsedMilliseconds} ");
             }
             else
             {
                 var sw = Stopwatch.StartNew();
-                output = DftCachedAVX(totalInputData);
+                if (IsAVXAvailable)
+                {
+                    output = DftCachedAVX(totalInputData);
+                }else
+                {
+                    output = DftCached(totalInputData);
+                }
                 sw.Stop();
                 Trace.WriteLine($"Time to generate DTF cached with AVX: {sw.ElapsedMilliseconds} ");
 
@@ -240,7 +252,7 @@ namespace Wpf_FFT
 
         }
 
-
+        // AVX + Trigonometric Recurrence DFT => 9 times faster
         private unsafe Complex[] DftAVX(double[] timeSeries)
         {
             // Cast to int for Parallel.For
