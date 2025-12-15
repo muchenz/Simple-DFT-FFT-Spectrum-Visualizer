@@ -394,7 +394,7 @@ namespace Wpf_FFT.MVVM
                 // Initialize the DFT
                 // You only need to do this once or if you change any of the DFT parameters.
 
-                dft.Initialize(lengthSample, zeros, fullFrequency: IsFullSpectrum);
+                dft.Initialize(lengthSample, zeros, forceNoCache:true, fullFrequency: IsFullSpectrum);
                 // Call the DFT and get the scaled spectrum back
                 _cSpectrum = dft.Execute(windowedTimeSeries);
                 _cSpectrumCopyBeforeShift = _cSpectrum;

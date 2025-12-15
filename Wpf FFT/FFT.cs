@@ -135,8 +135,7 @@ namespace Wpf_FFT
             // use a brute force DFT.
             // Note: pre-calculation speeds the DFT up by about 5X (on a core i7)
             mOutOfMemory = false;
-            return;
-
+            
             try
             {
                 mCosTerm = new double[mLengthTotal, mLengthTotal];
@@ -277,6 +276,17 @@ namespace Wpf_FFT
 
                     int k = 0;
 
+                    double sin0 = 0.0;
+                    double cos0 = 1.0;   // dla k = 0 → sin(0), cos(0)
+                    double sinD = Math.Sin(a);
+                    double cosD = Math.Cos(a);
+                    if (k != 0)
+                    {
+                        double ang = a * k;
+                        sin0 = Math.Sin(ang);
+                        cos0 = Math.Cos(ang);
+                    }
+
                     // Główna pętla AVX (krok co 4)
                     for (; k <= n - 4; k += 4)
                     {
@@ -285,18 +295,19 @@ namespace Wpf_FFT
 
                         // 2. Obliczanie 4 kątów
                         // Niestety C# nie ma Avx.Cos, musimy policzyć to skalarnie i spakować
-                        double ang0 = a * k;
-                        double ang1 = a * (k + 1);
-                        double ang2 = a * (k + 2);
-                        double ang3 = a * (k + 3);
+                        // sin/cos dla 4 kolejnych próbek
+                        double sin1 = sin0 * cosD + cos0 * sinD;
+                        double cos1 = cos0 * cosD - sin0 * sinD;
 
-                        // Tworzenie wektorów Cos i Sin
-                        // Create jest dość tanie, a Math.Cos/Sin jest wąskim gardłem (bottleneck)
-                        Vector256<double> vCos = Vector256.Create(
-                            Math.Cos(ang0), Math.Cos(ang1), Math.Cos(ang2), Math.Cos(ang3));
+                        double sin2 = sin1 * cosD + cos1 * sinD;
+                        double cos2 = cos1 * cosD - sin1 * sinD;
 
-                        Vector256<double> vSin = Vector256.Create(
-                            Math.Sin(ang0), Math.Sin(ang1), Math.Sin(ang2), Math.Sin(ang3));
+                        double sin3 = sin2 * cosD + cos2 * sinD;
+                        double cos3 = cos2 * cosD - sin2 * sinD;
+
+                        // pakowanie do AVX
+                        Vector256<double> vSin = Vector256.Create(sin0, sin1, sin2, sin3);
+                        Vector256<double> vCos = Vector256.Create(cos0, cos1, cos2, cos3);
 
                         // 3. Mnożenie wektorowe (FMA)
                         // re += time * cos
@@ -304,6 +315,9 @@ namespace Wpf_FFT
 
                         // im -= time * sin
                         vIm = Avx.Subtract(vIm, Avx.Multiply(vTime, vSin));
+
+                        sin0 = sin3 * cosD + cos3 * sinD;
+                        cos0 = cos3 * cosD - sin3 * sinD;
                     }
 
                     // Sumowanie poziome (redukcja wektorów do liczby)
