@@ -63,7 +63,8 @@ namespace Wpf_FFT.MVVM
 
         }
 
-
+        public bool AVXCheckBoxEnabled { get; set; } = DFT.IsAVXAvailable;
+        public bool AVXEnabled { get; set; } = DFT.IsAVXAvailable;
 
         //private string _functionToFFT2 = "if( sin(2.0 * pi * time * frequency)>0 , 1, -1)";
         private string _functionToFFT = "sin(2.0 * pi* t* f)*e^(t*100)";
@@ -394,7 +395,7 @@ namespace Wpf_FFT.MVVM
                 // Initialize the DFT
                 // You only need to do this once or if you change any of the DFT parameters.
 
-                dft.Initialize(lengthSample, zeros, forceNoCache:true, fullFrequency: IsFullSpectrum);
+                dft.Initialize(lengthSample, zeros, forceNoCache:true, fullFrequency: IsFullSpectrum,AVXoff: !AVXEnabled);
                 // Call the DFT and get the scaled spectrum back
                 _cSpectrum = dft.Execute(windowedTimeSeries);
                 _cSpectrumCopyBeforeShift = _cSpectrum;

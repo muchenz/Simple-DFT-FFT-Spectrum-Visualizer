@@ -60,13 +60,16 @@
         <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
             <Grid>
                 <StackPanel VerticalAlignment="Top">
-                    <Menu Width="Auto" Height="20">
+                    <Menu Width="Auto" Height="20" FontSize="13">
                         <MenuItem Header="_File">
                             <MenuItem x:Name="AppExit" Header="E_xit" HorizontalAlignment="Left" Width="140"/>
                         </MenuItem>
                         <MenuItem Header="_Options">
-                            <CheckBox  IsChecked="{Binding IsCopyNyquist}" >
-                                <Label Margin="2 -7 0 0" FontSize="14"  Content="Copy Nyquist bin for symmetry of the graph"/>
+                            <CheckBox Margin="0 3 0 -2" IsChecked="{Binding IsCopyNyquist}" >
+                                <Label Margin="2 -6 0 0" FontSize="13"  Content="Copy Nyquist bin for symmetry of the graph"/>
+                            </CheckBox>
+                            <CheckBox Margin="0 3 0 -2" IsChecked="{Binding AVXEnabled}" IsEnabled="{Binding AVXCheckBoxEnabled}" >
+                                <Label Margin="2 -6 0 0" FontSize="13"  Content="AVX Enabled (only for DFT)"/>
                             </CheckBox>
                         </MenuItem>
 

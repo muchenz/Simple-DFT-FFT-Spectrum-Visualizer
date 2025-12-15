@@ -94,9 +94,9 @@ namespace Wpf_FFT
         /// <param name="zeroPaddingLength"></param>
         /// <param name="forceNoCache">True will force the DFT to not use pre-calculated caching.</param>
         public void Initialize(UInt32 inputDataLength, UInt32 zeroPaddingLength = 0, bool forceNoCache = false, bool fullFrequency = false,
-            bool AXVoff = false)
+            bool AVXoff = false)
         {
-            _AVXoff = AXVoff;
+            _AVXoff = AVXoff;
             _fullFrequencyData = fullFrequency;
             // Save the sizes for later
             mLengthTotal = inputDataLength + zeroPaddingLength;
@@ -191,10 +191,10 @@ namespace Wpf_FFT
                 var sw = Stopwatch.StartNew();
                 if (IsAVXAvailable && _AVXoff)
                 {
-                    output = DftAVX(totalInputData);
+                    output = Dft(totalInputData);
                 }else
                 {
-                    output = Dft(totalInputData);
+                    output = DftAVX(totalInputData);
                 }
                 sw.Stop();
                 Trace.WriteLine($"Time to generate DTF with AVX: {sw.ElapsedMilliseconds} ");
@@ -204,10 +204,10 @@ namespace Wpf_FFT
                 var sw = Stopwatch.StartNew();
                 if (IsAVXAvailable && _AVXoff)
                 {
-                    output = DftCachedAVX(totalInputData);
+                    output = DftCached(totalInputData);
                 }else
                 {
-                    output = DftCached(totalInputData);
+                    output = DftCachedAVX(totalInputData);
                 }
                 sw.Stop();
                 Trace.WriteLine($"Time to generate DTF cached with AVX: {sw.ElapsedMilliseconds} ");
