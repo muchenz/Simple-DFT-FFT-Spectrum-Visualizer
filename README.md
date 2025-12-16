@@ -16,3 +16,8 @@ Download:
 * Added bins chart
 * Added Nyquist bin option for symmerty of chart
 * Added Impulse train to examples
+  
+#### ver. 1.0.0.5
+* Added AVX support for DFT
+* Fixed errors related to detecting incorrect data
+
