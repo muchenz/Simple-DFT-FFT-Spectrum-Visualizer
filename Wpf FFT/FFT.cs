@@ -197,7 +197,7 @@ namespace Wpf_FFT
                     output = DftAVX(totalInputData);
                 }
                 sw.Stop();
-                Trace.WriteLine($"Time to generate DTF with AVX: {sw.ElapsedMilliseconds} ");
+                Trace.WriteLine($"Time to generate DTF: {sw.ElapsedMilliseconds} ");
             }
             else
             {
@@ -210,7 +210,7 @@ namespace Wpf_FFT
                     output = DftCachedAVX(totalInputData);
                 }
                 sw.Stop();
-                Trace.WriteLine($"Time to generate DTF cached with AVX: {sw.ElapsedMilliseconds} ");
+                Trace.WriteLine($"Time to generate DTF cached: {sw.ElapsedMilliseconds} ");
 
             }
             return output;
